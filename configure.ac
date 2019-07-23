@@ -27,9 +27,12 @@ CXXFLAGS="$CXXFLAGS -std=c++11"
 
 # Checks for typedefs, structures, and compiler characteristics.
 
+PKG_CONFIG
 # Checks for library functions.
-PKG_CHECK_MODULES([SDL2], [sdl2, sdl2_image])
 PKG_CHECK_MODULES([SDL], [sdl])
+PKG_CHECK_MODULES([SDL2], [sdl2, sdl2_image], [ ] ,[ 
+   PKG_CHECK_MODULES([SDL2], [sdl2, SDL2_image])
+])
 PKG_CHECK_MODULES([FFMPEG], [libavcodec libavformat libavutil])
 
 AC_CONFIG_FILES([Makefile
