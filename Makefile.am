@@ -1,0 +1,13 @@
+bin_PROGRAMS = CApp
+
+CApp_SOURCES = CApp.cpp
+CApp_SOURCES += CSurface.cpp
+CApp_SOURCES += CEvent.cpp
+
+CApp_LDADD = -lpthread 
+CApp_LDADD += $(SDL2_LIBS)
+CApp_LDADD += $(FFMPEG_LIBS)
+CApp_CXXFLAGS = $(SDL2_CFLAGS)
+CApp_CXXFLAGS += $(FFMPEG_CFLAGS)
+CApp_LDFLAGS = $(SDL2_LDFLAGS)
+CApp_LDFLAGS += $(FFMPEG_LDFLAGS) 

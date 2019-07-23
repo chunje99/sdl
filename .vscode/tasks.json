@@ -1,0 +1,45 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "options": {
+        "env": {
+        }
+    },
+    "tasks": [
+        {
+            "label": "make",
+            "type": "shell",
+            "group": "build",
+            "command": "make",
+            "problemMatcher": []
+        },
+        {
+            "label": "make clean",
+            "type": "shell",
+            "group": "build",
+            "command": "make clean",
+            "problemMatcher": []
+        },
+        {
+            "label": "configure",
+            "type": "shell",
+            "group": "build",
+            "command": "./configure",
+            "problemMatcher": [],
+            "args": [
+                "CXXFLAGS=-std=c++11"
+            ]
+        },
+        {
+            "label": "autoreconf",
+            "type": "shell",
+            "group": "build",
+            "command": "autoreconf",
+            "problemMatcher": [],
+            "args": [
+                "-i"
+            ]
+        }
+    ]
+} 
