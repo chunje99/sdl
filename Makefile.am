@@ -3,6 +3,7 @@ bin_PROGRAMS = CApp
 CApp_SOURCES = CApp.cpp
 CApp_SOURCES += CSurface.cpp
 CApp_SOURCES += CEvent.cpp
+CApp_SOURCES += Decode.cpp
 
 CApp_LDADD = -lpthread 
 CApp_LDADD += $(SDL2_LIBS)

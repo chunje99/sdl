@@ -9,6 +9,7 @@
 
 #include "CSurface.h"
 #include "CEvent.h"
+#include "Decode.h"
 
 //==============================================================================
 class CApp : public CEvent
@@ -22,8 +23,11 @@ private:
     SDL_Window *screen;
     SDL_Renderer *renderer;
     SDL_Texture *tex;
+    SDL_Texture *videoTexture;
     int X;
     int Y;
+    CDecode* m_decoder;
+    AVFrame* pFrameRGB;
 
 public:
     CApp();
