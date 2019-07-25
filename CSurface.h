@@ -19,7 +19,7 @@ class CSurface {
 
 		static bool OnDraw(SDL_Surface* Surf_Dest, SDL_Surface* Surf_Src, int X, int Y, int X2, int Y2, int W, int H);
 
-		static bool OnDraw(SDL_Renderer* renderer, SDL_Texture* tex, int X, int Y);
+		static bool OnDraw(SDL_Renderer* renderer, SDL_Texture* tex, int X, int Y, int W, int H);
 
 		static bool OnDraw(SDL_Renderer* renderer, SDL_Texture* tex, SDL_Surface* Surf_Src, int X, int Y);
 };

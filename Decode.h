@@ -30,7 +30,7 @@ public:
     ~CDecode();
     int Init(const char *filePath);
     int ReadFrame();
-    int DecodeFrame(AVFrame *pFrameRGB);
+    int DecodeFrame(AVFrame *pFrameRGB, double now);
     int PlayAudio();
 
     AVCodecContext* GetVideoCtx() {return m_pCodecCtx;};
@@ -52,6 +52,7 @@ private:
                          int out_channels,
                          int out_sample_rate,
                          uint8_t *out_buf);
+    double synchronize_video(AVFrame *src_frame, double pts);
 
     AVFormatContext *pFormatCtx;
     AVCodecContext *m_pCodecCtx;
@@ -72,6 +73,8 @@ private:
     unsigned int m_audio_buf_index;
     int m_audio_pkt_size;
     uint8_t *m_audio_pkt_data;
+
+    double          video_clock;
 };
 
 #endif

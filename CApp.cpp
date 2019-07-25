@@ -1,6 +1,7 @@
 //==============================================================================
 #include "CApp.h"
 #include <unistd.h>
+#include <chrono>
 extern "C"
 {
 #include <libavutil/imgutils.h>
@@ -17,6 +18,7 @@ CApp::CApp()
     videoTexture = NULL;
     m_decoder = NULL;
     pFrameRGB = NULL;
+    m_idx = 0;
 
     Running = true;
 }
@@ -88,8 +90,8 @@ int CApp::OnExecute()
         return -1;
     }
 
+    m_now = std::chrono::system_clock::now();
     SDL_Event Event;
-
     while (Running)
     {
         while (SDL_PollEvent(&Event))
@@ -114,14 +116,20 @@ void CApp::OnEvent(SDL_Event *Event)
 void CApp::OnRender()
 {
     //CSurface::OnDraw(renderer, tex, Surf_Test, X, Y);
-    std::cout << "OnRender:" << CSurface::OnDraw(renderer, videoTexture, X, Y) << std::endl;;
+    CSurface::OnDraw(renderer, videoTexture, X, Y,
+                              m_decoder->GetVideoCtx()->width/2,
+                              m_decoder->GetVideoCtx()->height/2 );
 }
 void CApp::OnLoop()
 {
-    if (m_decoder->DecodeFrame(pFrameRGB) != 0)
+    auto now = std::chrono::system_clock::now();
+    std::chrono::duration<double> diff = now-m_now;
+    if (m_decoder->DecodeFrame(pFrameRGB, diff.count()) == 0)
     {
         SDL_UpdateTexture(videoTexture, NULL, pFrameRGB->data[0], pFrameRGB->linesize[0]);
         //SDL_UpdateTexture(tex, NULL, pFrameRGB->data[0], pFrameRGB->linesize[0]);
+        double pts = av_frame_get_best_effort_timestamp(pFrameRGB);
+        std::cout << "PTS:" << pts << std::endl;
         usleep(100);
     }
 }

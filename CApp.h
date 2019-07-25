@@ -28,6 +28,8 @@ private:
     int Y;
     CDecode* m_decoder;
     AVFrame* pFrameRGB;
+    int m_idx;
+    std::chrono::time_point<std::chrono::system_clock> m_now;
 
 public:
     CApp();

@@ -181,35 +181,15 @@ int CDecode::ReadFrame()
     return 0;
 }
 
-int CDecode::DecodeFrame(AVFrame* pFrameRGB)
+int CDecode::DecodeFrame(AVFrame* pFrameRGB, double now)
 {
-    /*
-    SDL_Overlay *bmp = NULL;
-    bmp = SDL_CreateYUVOverlay(m_pCodecCtx->width, m_pCodecCtx->height,
-                               SDL_YV12_OVERLAY, m_screen);
-                               */
-
     AVPacket *packet;
     AVFrame *pFrame = av_frame_alloc();
     // Allocate an AVFrame structure
-    /*
-    pFrameRGB = av_frame_alloc();
-    if (pFrameRGB == NULL)
-        return -1;
-    uint8_t *buffer = NULL;
-    int numBytes;
-    // Determine required buffer size and allocate buffer
-    numBytes = avpicture_get_size(AV_PIX_FMT_RGB24, m_pCodecCtx->width,
-                                  m_pCodecCtx->height);
-    buffer = (uint8_t *)av_malloc(numBytes * sizeof(uint8_t));
-    avpicture_fill((AVPicture *)pFrameRGB, buffer, AV_PIX_FMT_RGB24,
-                   m_pCodecCtx->width, m_pCodecCtx->height);
-                   */
     int ret;
     //SDL_Rect rect;
     while (1)
     {
-        std::cerr << "Packet Read" << std::endl;
         while (1)
         {
             packet = GetPacket();
@@ -222,47 +202,37 @@ int CDecode::DecodeFrame(AVFrame* pFrameRGB)
             {
                 // Decode video frame
                 ret = avcodec_send_packet(m_pCodecCtx, packet);
-                av_packet_unref(packet);
                 if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF)
                 {
                     std::cerr << "send packet Error" << std::endl;
+                    av_packet_unref(packet);
                     break;
                 }
 
                 if (avcodec_receive_frame(m_pCodecCtx, pFrame) == 0)
                 {
-                    /*
-                    SDL_LockYUVOverlay(bmp);
-
-                    AVPicture pict;
-                    pict.data[0] = bmp->pixels[0];
-                    pict.data[1] = bmp->pixels[2];
-                    pict.data[2] = bmp->pixels[1];
-
-                    pict.linesize[0] = bmp->pitches[0];
-                    pict.linesize[1] = bmp->pitches[2];
-                    pict.linesize[2] = bmp->pitches[1];
-
-                    // Convert the image into YUV format that SDL uses
+                    double pts = 0;
+                    if (packet->dts != AV_NOPTS_VALUE)
+                    {
+                        pts = av_frame_get_best_effort_timestamp(pFrame);
+                    }
+                    std::cout << "BEFORE PTS:" << pts << std::endl;
+                    pts *= av_q2d(pFormatCtx->streams[m_videoStream]->time_base);
+                    std::cout << "BEFORE PTS2:" << pts << std::endl;
+                    pts = synchronize_video(pFrame, pts);
+                    std::cout << "BEFORE PTS3:" << video_clock << std::endl;
+                    double diff = pts-now;
+                    std::cout << "DIFF :" << diff << std::endl;
+                    if( diff > 0 )
+                        usleep( diff * 1000000);
                     sws_scale(sws_ctx, (uint8_t const *const *)pFrame->data,
                               pFrame->linesize, 0, m_pCodecCtx->height,
-                              pict.data, pict.linesize);
-
-                    SDL_UnlockYUVOverlay(bmp);
-                    rect.x = 0;
-                    rect.y = 0;
-                    rect.w = m_pCodecCtx->width;
-                    rect.h = m_pCodecCtx->height;
-                    SDL_DisplayYUVOverlay(bmp, &rect);
-                    */
-
-                   sws_scale(sws_ctx, (uint8_t const *const *)pFrame->data,
-                           pFrame->linesize, 0, m_pCodecCtx->height,
-                           pFrameRGB->data, pFrameRGB->linesize);
-                   //SaveFrame(pFrameRGB, m_pCodecCtx->width, m_pCodecCtx->height, i++);
-                   std::cout << "Find Frame" << std::endl;
-                   return 0;
+                              pFrameRGB->data, pFrameRGB->linesize);
+                    //SaveFrame(pFrameRGB, m_pCodecCtx->width, m_pCodecCtx->height, idx);
+                    av_packet_unref(packet);
+                    return 0;
                 }
+                av_packet_unref(packet);
             }
             else if (packet->stream_index == m_audioStream)
             {
@@ -271,7 +241,6 @@ int CDecode::DecodeFrame(AVFrame* pFrameRGB)
         }
         if (m_endFrame)
             break;
-        //usleep(100);
     }
     return -1;
 }
@@ -646,4 +615,27 @@ int CDecode::audio_resampling(AVCodecContext *audio_decode_ctx,
         swr_free(&swr_ctx);
     }
     return resampled_data_size;
+}
+
+double CDecode::synchronize_video(AVFrame *src_frame, double pts)
+{
+
+    double frame_delay;
+
+    if (pts != 0)
+    {
+        /* if we have pts, set video clock to it */
+        video_clock = pts;
+    }
+    else
+    {
+        /* if we aren't given a pts, set it to the clock */
+        pts = video_clock;
+    }
+    /* update the video clock */
+    frame_delay = av_q2d(pFormatCtx->streams[m_videoStream]->time_base);
+    /* if we are repeating a frame, adjust clock accordingly */
+    frame_delay += src_frame->repeat_pict * (frame_delay * 0.5);
+    video_clock += frame_delay;
+    return pts;
 }

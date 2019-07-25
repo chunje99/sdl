@@ -85,7 +85,7 @@ bool CSurface::OnDraw(SDL_Renderer *renderer, SDL_Texture* tex, SDL_Surface *Sur
 	return true;
 }
 
-bool CSurface::OnDraw(SDL_Renderer *renderer, SDL_Texture* tex, int X, int Y)
+bool CSurface::OnDraw(SDL_Renderer *renderer, SDL_Texture* tex, int X, int Y, int W, int H)
 {
 	if(renderer == NULL || tex == NULL ) {
 		return false;
@@ -95,13 +95,20 @@ bool CSurface::OnDraw(SDL_Renderer *renderer, SDL_Texture* tex, int X, int Y)
 
 	DestR.x = X;
 	DestR.y = Y;
+	DestR.w = W;
+	DestR.h = H;
 
-	SrcR.x = X;
-	SrcR.y = Y;
+	SrcR.x = 0;
+	SrcR.y = 0;
+	SrcR.w = 200;
+	SrcR.h = 200;
 
     SDL_RenderClear(renderer);
     //Draw the texture
-    SDL_RenderCopy(renderer, tex, NULL, NULL);
+    SDL_RenderCopy(renderer, tex, NULL, &DestR);
+	DestR.x = X+W;
+    SDL_RenderCopy(renderer, tex, NULL, &DestR);
+    //SDL_RenderCopy(renderer, tex, NULL, NULL);
     //Update the screen
     SDL_RenderPresent(renderer);
 
