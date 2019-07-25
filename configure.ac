@@ -33,7 +33,7 @@ PKG_CHECK_MODULES([SDL], [sdl])
 PKG_CHECK_MODULES([SDL2], [sdl2, sdl2_image], [ ] ,[ 
    PKG_CHECK_MODULES([SDL2], [sdl2, SDL2_image])
 ])
-PKG_CHECK_MODULES([FFMPEG], [libavcodec libavformat libavutil])
+PKG_CHECK_MODULES([FFMPEG], [libavcodec libavformat libavutil libswscale libswresample])
 
 AC_CONFIG_FILES([Makefile
                  ])
