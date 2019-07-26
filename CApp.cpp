@@ -7,6 +7,8 @@ extern "C"
 #include <libavutil/imgutils.h>
 }
 
+const char* fileName;
+
 //==============================================================================
 CApp::CApp()
 {
@@ -19,6 +21,8 @@ CApp::CApp()
     m_decoder = NULL;
     pFrameRGB = NULL;
     m_idx = 0;
+    wantedSpec = {0};
+    audioSpec = {0};
 
     Running = true;
 }
@@ -27,10 +31,10 @@ bool CApp::OnInit()
 {
     //openfile
     m_decoder = new CDecode();
-    if (m_decoder->Init("SampleVideo_1280x720_20mb.mp4") != 0)
+    if (m_decoder->Init(fileName) != 0)
         return false;
 
-    m_decoder->ReadFrame();
+    //m_decoder->ReadFrame();
 
     if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
     {
@@ -79,6 +83,26 @@ bool CApp::OnInit()
                                         m_decoder->GetVideoCtx()->width,
                                         m_decoder->GetVideoCtx()->height,
                                         1);
+    ///init audio
+    if (m_decoder->GetAudioCtx() != NULL)
+    {
+        wantedSpec.channels = m_decoder->GetAudioCtx()->channels;
+        wantedSpec.freq = m_decoder->GetAudioCtx()->sample_rate;
+        wantedSpec.format = AUDIO_F32;
+        wantedSpec.silence = 0;
+        wantedSpec.samples = SDL_AUDIO_BUFFER_SIZE;
+        //wantedSpec.userdata = m_decoder->GetAudioCtx();
+        wantedSpec.userdata = this;
+        wantedSpec.callback = CApp::AudioCallback;
+
+        if (SDL_OpenAudio(&wantedSpec, &audioSpec) < 0)
+        {
+            std::cerr << "SDL_OpenAudio: " << SDL_GetError() << std::endl;
+            return false;
+        }
+
+        SDL_PauseAudio(0);
+    }
     return true;
 }
 
@@ -124,12 +148,10 @@ void CApp::OnLoop()
 {
     auto now = std::chrono::system_clock::now();
     std::chrono::duration<double> diff = now-m_now;
+    //double diff2 = now-m_now;
     if (m_decoder->DecodeFrame(pFrameRGB, diff.count()) == 0)
     {
         SDL_UpdateTexture(videoTexture, NULL, pFrameRGB->data[0], pFrameRGB->linesize[0]);
-        //SDL_UpdateTexture(tex, NULL, pFrameRGB->data[0], pFrameRGB->linesize[0]);
-        double pts = av_frame_get_best_effort_timestamp(pFrameRGB);
-        std::cout << "PTS:" << pts << std::endl;
         usleep(100);
     }
 }
@@ -207,9 +229,26 @@ void CApp::OnMouseMove(int mX, int mY, int relX, int relY, bool Left, bool Right
     X = mX;
     Y = mY;
 }
+
+void CApp::OnAudioCallback(Uint8 *stream, int len)
+{
+    m_decoder->onCallback(stream, len);
+}
+
+void CApp::AudioCallback(void *userdata, uint8_t * stream, int len)
+{
+    static_cast<CApp*>(userdata)->OnAudioCallback(stream, len);
+}
 //==============================================================================
 int main(int argc, char *argv[])
 {
+    if(argc != 2)
+    {
+        std::cerr << argv[0] << " file" << std::endl;
+        return -1;
+    }
+
+    fileName = argv[1];
     CApp theApp;
 
     return theApp.OnExecute();

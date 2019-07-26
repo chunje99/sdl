@@ -31,10 +31,11 @@ public:
     int Init(const char *filePath);
     int ReadFrame();
     int DecodeFrame(AVFrame *pFrameRGB, double now);
-    int PlayAudio();
 
     AVCodecContext* GetVideoCtx() {return m_pCodecCtx;};
     AVCodecContext* GetAudioCtx() {return m_audioCodecCtx;};
+    double synchronize_video(AVFrame *src_frame, double pts);
+    void onCallback(Uint8 *stream, int len);
 
 private:
     int AddPacket(AVPacket *packet);
@@ -43,17 +44,10 @@ private:
     AVPacket *GetAudioPacket();
 
     void SaveFrame(AVFrame *pFrame, int width, int height, int iFrame);
-    void onCallback(Uint8 *stream, int len);
     static void audio_callback(void *userdata, Uint8 *stream, int len);
     int audio_decode_frame(uint8_t *audio_buf, int buf_size);
-    int audio_resampling(AVCodecContext *audio_decode_ctx,
-                         AVFrame *audio_decode_frame,
-                         enum AVSampleFormat out_sample_fmt,
-                         int out_channels,
-                         int out_sample_rate,
-                         uint8_t *out_buf);
-    double synchronize_video(AVFrame *src_frame, double pts);
 
+private:
     AVFormatContext *pFormatCtx;
     AVCodecContext *m_pCodecCtx;
     AVCodecContext *m_audioCodecCtx;
@@ -66,15 +60,18 @@ private:
     std::mutex m_mutex;
     bool m_endFrame;
     bool m_endAudio;
-    std::thread m_thread[2];
+    std::thread* m_thread[2];
     SDL_Surface *m_screen;
+    double          video_clock;
+
     uint8_t m_audio_buf[(AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2];
     unsigned int m_audio_buf_size;
     unsigned int m_audio_buf_index;
     int m_audio_pkt_size;
     uint8_t *m_audio_pkt_data;
-
-    double          video_clock;
+    SwrContext *swr_ctx;
+	uint8_t converted_data[(192000 * 3) / 2];
+    uint8_t* converted;
 };
 
 #endif

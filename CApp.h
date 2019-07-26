@@ -30,6 +30,8 @@ private:
     AVFrame* pFrameRGB;
     int m_idx;
     std::chrono::time_point<std::chrono::system_clock> m_now;
+    SDL_AudioSpec wantedSpec;
+    SDL_AudioSpec audioSpec;
 
 public:
     CApp();
@@ -54,6 +56,10 @@ public:
 	void OnKeyUp(SDL_Keycode sym, Uint16 mod, SDL_Scancode scancode);
 
 	void OnMouseMove(int mX, int mY, int relX, int relY, bool Left, bool Right, bool Middle);
+
+public:
+    void OnAudioCallback(Uint8 *stream, int len);
+    static void AudioCallback(void *userdata, uint8_t * stream, int len);
 };
     //==============================================================================
 

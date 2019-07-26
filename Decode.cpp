@@ -16,32 +16,18 @@ CDecode::CDecode() : pFormatCtx(NULL)
     m_audio_pkt_size = 0;
     m_audio_pkt_data = NULL;
     sws_ctx = NULL;
-
-    /*
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER))
-    {
-        fprintf(stderr, "Could not initialize SDL - %s\n", SDL_GetError());
-        exit(1);
-    }
-    */
+    swr_ctx = NULL;
+    converted = &converted_data[0];
+    m_thread[0] = NULL;
+    m_thread[1] = NULL;
 }
 
 CDecode::~CDecode()
 {
-    /*
-    SDL_CloseAudio();
-    SDL_Event event;
-    SDL_PollEvent(&event);
-    switch (event.type)
-    {
-    case SDL_QUIT:
-        SDL_Quit();
-        exit(0);
-        break;
-    default:
-        break;
-    }
-    */
+    if(m_thread[0])
+        m_thread[0]->join();
+    if(m_thread[1])
+        m_thread[1]->join();
 }
 
 int CDecode::Init(const char *filePath)
@@ -107,6 +93,18 @@ int CDecode::Init(const char *filePath)
         return -1;
     }
 
+    sws_ctx = sws_getContext(m_pCodecCtx->width,
+                             m_pCodecCtx->height,
+                             m_pCodecCtx->pix_fmt,
+                             m_pCodecCtx->width,
+                             m_pCodecCtx->height,
+                             AV_PIX_FMT_RGB24,
+                             SWS_BILINEAR,
+                             NULL,
+                             NULL,
+                             NULL);
+
+
     ///audioCodecCtx
     AVCodec *audioCodec = NULL;
     audioCodec = avcodec_find_decoder(pFormatCtx->streams[m_audioStream]->codecpar->codec_id);
@@ -128,27 +126,32 @@ int CDecode::Init(const char *filePath)
         return -1;
     }
 
-    sws_ctx = sws_getContext(m_pCodecCtx->width,
-                             m_pCodecCtx->height,
-                             m_pCodecCtx->pix_fmt,
-                             m_pCodecCtx->width,
-                             m_pCodecCtx->height,
-                             AV_PIX_FMT_RGB24,
-                             SWS_BILINEAR,
-                             NULL,
-                             NULL,
-                             NULL);
+    if (m_audioStream >= 0)
+    {
+        swr_ctx = swr_alloc();
+        if (!swr_ctx)
+        {
+            printf("swr_alloc error\n");
+            return -1;
+        }
+        av_opt_set_channel_layout(swr_ctx, "in_channel_layout", m_audioCodecCtx->channel_layout, 0);
+		av_opt_set_channel_layout(swr_ctx, "out_channel_layout", m_audioCodecCtx->channel_layout, 0);
+		av_opt_set_int(swr_ctx, "in_sample_rate", m_audioCodecCtx->sample_rate, 0);
+		av_opt_set_int(swr_ctx, "out_sample_rate", m_audioCodecCtx->sample_rate, 0);
+		av_opt_set_sample_fmt(swr_ctx, "in_sample_fmt", m_audioCodecCtx->sample_fmt, 0);
+		av_opt_set_sample_fmt(swr_ctx, "out_sample_fmt", AV_SAMPLE_FMT_FLT, 0);
+		swr_init(swr_ctx);
+	}
 
     //ReadFrame();
     //PlayAudio();
     //DecodeFrame();
 
-    /*
-    std::thread t1(&CDecode::ReadFrame, this);
-    std::thread t2(&CDecode::DecodeFrame, this);
-    t1.join();
-    t2.join();
- */
+    m_thread[0] = new std::thread(&CDecode::ReadFrame, this);
+    //std::thread t1(&CDecode::ReadFrame, this);
+    //std::thread t2(&CDecode::DecodeFrame, this);
+    //t1.join();
+    //t2.join();
 
     return 0;
 }
@@ -187,7 +190,6 @@ int CDecode::DecodeFrame(AVFrame* pFrameRGB, double now)
     AVFrame *pFrame = av_frame_alloc();
     // Allocate an AVFrame structure
     int ret;
-    //SDL_Rect rect;
     while (1)
     {
         while (1)
@@ -220,7 +222,7 @@ int CDecode::DecodeFrame(AVFrame* pFrameRGB, double now)
                     pts *= av_q2d(pFormatCtx->streams[m_videoStream]->time_base);
                     std::cout << "BEFORE PTS2:" << pts << std::endl;
                     pts = synchronize_video(pFrame, pts);
-                    std::cout << "BEFORE PTS3:" << video_clock << std::endl;
+                    //std::cout << "BEFORE PTS3:" << video_clock << std::endl;
                     double diff = pts-now;
                     std::cout << "DIFF :" << diff << std::endl;
                     if( diff > 0 )
@@ -229,6 +231,9 @@ int CDecode::DecodeFrame(AVFrame* pFrameRGB, double now)
                               pFrame->linesize, 0, m_pCodecCtx->height,
                               pFrameRGB->data, pFrameRGB->linesize);
                     //SaveFrame(pFrameRGB, m_pCodecCtx->width, m_pCodecCtx->height, idx);
+                    pFrameRGB->best_effort_timestamp = pFrame->best_effort_timestamp;
+                    pFrameRGB->pts = pFrame->pts;
+                    pFrameRGB->pkt_pts = pFrame->pkt_pts;
                     av_packet_unref(packet);
                     return 0;
                 }
@@ -342,7 +347,6 @@ void CDecode::onCallback(Uint8 *stream, int len)
             len1 = len;
         std::cout << "memcpy(stream)" << std::endl;
         memcpy(stream, (uint8_t *)m_audio_buf + m_audio_buf_index, len1);
-        //SDL_MixAudio(stream, (uint8_t *)m_audio_buf + audio_buf_index, len1, SDL_MIX_MAXVOLUME);
         len -= len1;
         stream += len1;
         m_audio_buf_index += len1;
@@ -360,7 +364,7 @@ int CDecode::audio_decode_frame(uint8_t *audio_buf, int buf_size)
     static AVPacket* pkt;
     //static AVFrame frame;
 
-    int len1, data_size = 0;
+    int len1, data_size = 0, len2;
 
     AVFrame *frame = av_frame_alloc();
     for (;;)
@@ -378,34 +382,22 @@ int CDecode::audio_decode_frame(uint8_t *audio_buf, int buf_size)
                 av_frame_unref(frame);
                 break;
             }
-            data_size = 0;
+            //data_size = 0;
+            m_audio_pkt_data += len1;
+            m_audio_pkt_size -= len1;
             if (got_frame)
             {
                 std::cout << "get_frmae" << std::endl;
-                data_size = audio_resampling(m_audioCodecCtx, frame,
-                                             AV_SAMPLE_FMT_S16,
-                                             frame->channels, frame->sample_rate, audio_buf);
-                /*
-                data_size = av_samples_get_buffer_size(NULL,
-                                                       m_audioCodecCtx->channels,
-                                                       frame->nb_samples,
-                                                       m_audioCodecCtx->sample_fmt,
-                                                       1);
-                std::cout << "av_samples_get_buffer_size" << std::endl;
-                if(data_size > buf_size)
-                {
-                    std::cerr << "data_size > buf_size" << std::endl;
-                }
-                std::cout << "memcpy:" << data_size << std::endl;
-                std::cout << "memcpy:" << &audio_buf << std::endl;
-                std::cout << "memcpy:" << &(frame->data[0]) << std::endl;
-                memcpy(audio_buf, frame->data[0], data_size);
-                //memcpy(audio_buf, frame->data[0], frame->linesize[0]);
-                std::cout << "memcpy ok" << std::endl;
-                */
+
+                data_size = av_samples_get_buffer_size(NULL, m_audioCodecCtx->channels, frame->nb_samples,
+                                                      m_audioCodecCtx->sample_fmt, 1);
+                int outSize = av_samples_get_buffer_size(NULL, m_audioCodecCtx->channels, frame->nb_samples,
+                                                         AV_SAMPLE_FMT_FLT, 1);
+                len2 = swr_convert(swr_ctx, &converted, frame->nb_samples, 
+                        (const uint8_t **)&frame->data[0], frame->nb_samples);
+				memcpy(audio_buf, converted_data, outSize);
+				data_size = outSize;
             }
-            m_audio_pkt_data += len1;
-            m_audio_pkt_size -= len1;
             if (data_size <= 0)
             {
                 std::cerr << "date_size <= 0" << std::endl;
@@ -447,175 +439,6 @@ int CDecode::audio_decode_frame(uint8_t *audio_buf, int buf_size)
     return 0;
 }
 
-int CDecode::PlayAudio()
-{
-    SDL_AudioSpec wanted_spec, spec;
-    wanted_spec.freq = m_audioCodecCtx->sample_rate;
-    wanted_spec.format = AUDIO_S16SYS;
-    //wanted_spec.format = AUDIO_F32SYS;
-    wanted_spec.channels = m_audioCodecCtx->channels;
-    wanted_spec.silence = 0;
-    wanted_spec.samples = SDL_AUDIO_BUFFER_SIZE;
-    wanted_spec.callback = audio_callback;
-    wanted_spec.userdata = this;
-
-    if (SDL_OpenAudio(&wanted_spec, &spec) < 0)
-    {
-        fprintf(stderr, "SDL_OpenAudio: %s\n", SDL_GetError());
-        return -1;
-    }
-    SDL_PauseAudio(0);
-    while (!m_endAudio)
-    {
-        SDL_Delay(100);
-    }
-    std::cerr << "PlayAudio End" << std::endl;
-    return 0;
-}
-
-int CDecode::audio_resampling(AVCodecContext *audio_decode_ctx,
-                            AVFrame *audio_decode_frame,
-                            enum AVSampleFormat out_sample_fmt,
-                            int out_channels,
-                            int out_sample_rate,
-                            uint8_t *out_buf)
-{
-    SwrContext *swr_ctx = NULL;
-    int ret = 0;
-    int64_t in_channel_layout = audio_decode_ctx->channel_layout;
-    int64_t out_channel_layout = AV_CH_LAYOUT_STEREO;
-    int out_nb_channels = 0;
-    int out_linesize = 0;
-    int in_nb_samples = 0;
-    int out_nb_samples = 0;
-    int max_out_nb_samples = 0;
-    uint8_t **resampled_data = NULL;
-    int resampled_data_size = 0;
-
-    swr_ctx = swr_alloc();
-    if (!swr_ctx)
-    {
-        printf("swr_alloc error\n");
-        return -1;
-    }
-
-    in_channel_layout = (audio_decode_ctx->channels ==
-                         av_get_channel_layout_nb_channels(audio_decode_ctx->channel_layout))
-                            ? audio_decode_ctx->channel_layout
-                            : av_get_default_channel_layout(audio_decode_ctx->channels);
-    if (in_channel_layout <= 0)
-    {
-        printf("in_channel_layout error\n");
-        return -1;
-    }
-
-    if (out_channels == 1)
-    {
-        out_channel_layout = AV_CH_LAYOUT_MONO;
-    }
-    else if (out_channels == 2)
-    {
-        out_channel_layout = AV_CH_LAYOUT_STEREO;
-    }
-    else
-    {
-        out_channel_layout = AV_CH_LAYOUT_SURROUND;
-    }
-
-    in_nb_samples = audio_decode_frame->nb_samples;
-    if (in_nb_samples <= 0)
-    {
-        printf("in_nb_samples error\n");
-        return -1;
-    }
-
-    av_opt_set_int(swr_ctx, "in_channel_layout", in_channel_layout, 0);
-    av_opt_set_int(swr_ctx, "in_sample_rate", audio_decode_ctx->sample_rate, 0);
-    av_opt_set_sample_fmt(swr_ctx, "in_sample_fmt", audio_decode_ctx->sample_fmt, 0);
-
-    av_opt_set_int(swr_ctx, "out_channel_layout", out_channel_layout, 0);
-    av_opt_set_int(swr_ctx, "out_sample_rate", out_sample_rate, 0);
-    av_opt_set_sample_fmt(swr_ctx, "out_sample_fmt", out_sample_fmt, 0);
-
-    if ((ret = swr_init(swr_ctx)) < 0)
-    {
-        printf("Failed to initialize the resampling context\n");
-        return -1;
-    }
-
-    max_out_nb_samples = out_nb_samples = av_rescale_rnd(in_nb_samples,
-                                                         out_sample_rate,
-                                                         audio_decode_ctx->sample_rate,
-                                                         AV_ROUND_UP);
-
-    if (max_out_nb_samples <= 0)
-    {
-        printf("av_rescale_rnd error\n");
-        return -1;
-    }
-
-    out_nb_channels = av_get_channel_layout_nb_channels(out_channel_layout);
-
-    ret = av_samples_alloc_array_and_samples(&resampled_data, &out_linesize, out_nb_channels, out_nb_samples, out_sample_fmt, 0);
-    if (ret < 0)
-    {
-        printf("av_samples_alloc_array_and_samples error\n");
-        return -1;
-    }
-
-    out_nb_samples = av_rescale_rnd(swr_get_delay(swr_ctx, audio_decode_ctx->sample_rate) + in_nb_samples,
-                                    out_sample_rate, audio_decode_ctx->sample_rate, AV_ROUND_UP);
-    if (out_nb_samples <= 0)
-    {
-        printf("av_rescale_rnd error\n");
-        return -1;
-    }
-
-    if (out_nb_samples > max_out_nb_samples)
-    {
-        av_free(resampled_data[0]);
-        ret = av_samples_alloc(resampled_data, &out_linesize, out_nb_channels, out_nb_samples, out_sample_fmt, 1);
-        max_out_nb_samples = out_nb_samples;
-    }
-
-    if (swr_ctx)
-    {
-        ret = swr_convert(swr_ctx, resampled_data, out_nb_samples,
-                          (const uint8_t **)audio_decode_frame->data, audio_decode_frame->nb_samples);
-        if (ret < 0)
-        {
-            printf("swr_convert_error\n");
-            return -1;
-        }
-
-        resampled_data_size = av_samples_get_buffer_size(&out_linesize, out_nb_channels, ret, out_sample_fmt, 1);
-        if (resampled_data_size < 0)
-        {
-            printf("av_samples_get_buffer_size error\n");
-            return -1;
-        }
-    }
-    else
-    {
-        printf("swr_ctx null error\n");
-        return -1;
-    }
-
-    memcpy(out_buf, resampled_data[0], resampled_data_size);
-
-    if (resampled_data)
-    {
-        av_freep(&resampled_data[0]);
-    }
-    av_freep(&resampled_data);
-    resampled_data = NULL;
-
-    if (swr_ctx)
-    {
-        swr_free(&swr_ctx);
-    }
-    return resampled_data_size;
-}
 
 double CDecode::synchronize_video(AVFrame *src_frame, double pts)
 {
