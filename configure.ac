@@ -19,29 +19,29 @@ AC_PROG_RANLIB
 AC_PROG_LIBTOOL
 #AC_LIBTOOL_DLOPEN
 
-CXXFLAGS="$CXXFLAGS -std=c++11"
 
 AC_ARG_ENABLE([debug],
   [AS_HELP_STRING([--enable-debug],
-                  [whether to include debug symbols (default is yes)])],
+                  [whether to include debug symbols (default is no)])],
   [enable_debug=$enableval],
-  [enable_debug=yes]
+  [enable_debug=no]
 )
 
+#  dnl Remove all optimization flags from CFLAGS
+changequote({,})
+CFLAGS=`echo "$CFLAGS" | $SED -e 's/-O[0-9s]*//g'`
+CXXFLAGS=`echo "$CXXFLAGS" | $SED -e 's/-O[0-9s]*//g'`
+
+CFLAGS=`echo "$CFLAGS" | $SED -e 's/-g[0-9]*//g'`
+CXXFLAGS=`echo "$CXXFLAGS" | $SED -e 's/-g[0-9]*//g'`
+changequote([,])
 if test "x$enable_debug" = xyes; then
-  dnl Remove all optimization flags from CFLAGS
-  changequote({,})
-  CFLAGS=`echo "$CFLAGS" | $SED -e 's/-O[0-9s]*//g'`
-  CXXFLAGS=`echo "$CXXFLAGS" | $SED -e 's/-O[0-9s]*//g'`
-
-  CFLAGS=`echo "$CFLAGS" | $SED -e 's/-g[0-9]*//g'`
-  CXXFLAGS=`echo "$CXXFLAGS" | $SED -e 's/-g[0-9]*//g'`
-  changequote([,])
-
-  CFLAGS="$CFLAGS -g -O0"
-  CXXFLAGS="$CXXFLAGS -g -O0"
+  CFLAGS="$CFLAGS -g -O0 -DDEBUG"
+  CXXFLAGS="$CXXFLAGS -g -O0 -DDEBUG"
+  else
+  CFLAGS="$CFLAGS  -O2 -DNDEBUG"
+  CXXFLAGS="$CXXFLAGS -O2 -DNDEBUG"
 fi
-
 
 # Checks for libraries.
 
@@ -56,6 +56,8 @@ PKG_CHECK_MODULES([SDL2], [sdl2, sdl2_image], [ ] ,[
    PKG_CHECK_MODULES([SDL2], [sdl2, SDL2_image])
 ])
 PKG_CHECK_MODULES([FFMPEG], [libavcodec libavformat libavutil libswscale libswresample libavdevice])
+PKG_CHECK_MODULES([GLOG], [libglog])
+PKG_CHECK_MODULES([GFLAGS], [gflags])
 
 AC_CONFIG_FILES([Makefile
                  ])

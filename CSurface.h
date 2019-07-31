@@ -13,15 +13,13 @@ class CSurface {
 		CSurface();
 
 	public:
-		static SDL_Surface* OnLoad(SDL_Window *window, char* File);
+		static SDL_Surface* OnLoad(SDL_Window *window, SDL_Renderer* renderer, char* File);
 
 		static bool OnDraw(SDL_Surface* Surf_Dest, SDL_Surface* Surf_Src, int X, int Y);
-
-		static bool OnDraw(SDL_Surface* Surf_Dest, SDL_Surface* Surf_Src, int X, int Y, int X2, int Y2, int W, int H);
-
+		static bool OnDrawPlayer(SDL_Renderer* renderer, SDL_Texture* tex, int X, int Y, int W, int H);
 		static bool OnDraw(SDL_Renderer* renderer, SDL_Texture* tex, int X, int Y, int W, int H);
-
 		static bool OnDraw(SDL_Renderer* renderer, SDL_Texture* tex, SDL_Surface* Surf_Src, int X, int Y);
+		static bool Transparent(SDL_Surface* Surf_Dest, int R, int G, int B);
 };
 
 //==============================================================================

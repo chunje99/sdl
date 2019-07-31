@@ -3,6 +3,17 @@
 
 #include <SDL.h>
 
+enum USER_EVNET_TYPE
+{
+	USER_EVNET_TYPE_BUTTON = 1,
+};
+enum USER_EVNET_CODE
+{
+	USER_EVNET_CODE_LCLICK = 1,
+	USER_EVNET_CODE_MOUSEOVER,
+	USER_EVNET_CODE_MOUSEOUT,
+};
+
 class CEvent
 {
 public:

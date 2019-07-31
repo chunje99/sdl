@@ -18,6 +18,7 @@ extern "C"
 #include <thread>
 #include <SDL.h>
 #include <SDL_thread.h>
+#include <glog/logging.h>
 
 #define SDL_AUDIO_BUFFER_SIZE 1024
 #define MAX_AUDIO_FRAME_SIZE 192000

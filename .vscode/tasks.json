@@ -27,7 +27,18 @@
             "command": "./configure",
             "problemMatcher": [],
             "args": [
-                "CXXFLAGS=-std=c++11"
+                "CXXFLAGS=-std=c++11",
+                "--enable-debug"
+            ]
+        },
+        {
+            "label": "configure release",
+            "type": "shell",
+            "group": "build",
+            "command": "./configure",
+            "problemMatcher": [],
+            "args": [
+                "CXXFLAGS=-std=c++11",
             ]
         },
         {

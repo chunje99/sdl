@@ -10,6 +10,9 @@
 #include "CSurface.h"
 #include "CEvent.h"
 #include "Decode.h"
+#include "CController.h"
+#include <glog/logging.h>
+#include <gflags/gflags.h>
 
 //==============================================================================
 class CApp : public CEvent
@@ -17,6 +20,7 @@ class CApp : public CEvent
 private:
     bool Running;
 
+    SDL_Event m_event;
     SDL_Surface *Surf_Display;
     SDL_Surface *Surf_Test;
 
@@ -24,19 +28,25 @@ private:
     SDL_Renderer *renderer;
     SDL_Texture *tex;
     SDL_Texture *videoTexture;
+
+    CController* m_controller;
     int X;
     int Y;
     CDecode* m_decoder;
     AVFrame* pFrameRGB;
     int m_idx;
     std::chrono::time_point<std::chrono::system_clock> m_now;
+    std::chrono::duration<double> m_playTime;
     SDL_AudioSpec wantedSpec;
     SDL_AudioSpec audioSpec;
+    std::string m_fileName;
+    bool m_play;
 
 public:
     CApp();
 
     int OnExecute();
+    void SetFileName(const char* fileName);
 
 public:
     bool OnInit();
@@ -56,6 +66,10 @@ public:
 	void OnKeyUp(SDL_Keycode sym, Uint16 mod, SDL_Scancode scancode);
 
 	void OnMouseMove(int mX, int mY, int relX, int relY, bool Left, bool Right, bool Middle);
+
+    void OnUser(Uint8 type, int code, void *data1, void *data2);
+
+    void OnPlayClick();
 
 public:
     void OnAudioCallback(Uint8 *stream, int len);

@@ -5,7 +5,7 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "(lldb) Launch",
+			"name": "(lldb) Mac",
 			"type": "cppdbg",
 			"request": "launch",
 			"program": "${workspaceFolder}/CApp",
@@ -18,11 +18,14 @@
 			"preLaunchTask": "make"
 		},
 		{
-			"name": "g++ build and debug active file",
+			"name": "debug Linux",
 			"type": "cppdbg",
 			"request": "launch",
 			"program": "${workspaceFolder}/CApp",
-			"args": ["KakaoTalk_Video_2017-07-03-16-41-59.mp4"],
+			"args": [
+				"-file=SampleVideo_1280x720_20mb.mp4",
+				"-logtostderr"
+			],
 			"stopAtEntry": false,
 			"cwd": "${workspaceFolder}",
 			"environment": [],

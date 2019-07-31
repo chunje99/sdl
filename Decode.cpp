@@ -36,24 +36,24 @@ int CDecode::Init(const char *filePath)
     pFormatCtx = avformat_alloc_context();
     if (avformat_open_input(&pFormatCtx, filePath, NULL, NULL) != 0)
     {
-        std::cerr << "file open error " << filePath << std::endl;
+        LOG(ERROR) << "file open error " << filePath;
         return -1; // Couldn't open file
     }
 
     // Retrieve stream information
     if (avformat_find_stream_info(pFormatCtx, NULL) < 0)
     {
-        std::cerr << "find stream info error " << std::endl;
+        LOG(ERROR) << "find stream info error ";
         return -1; // Couldn't find stream information
     }
 
     // Dump information about file onto standard error
     av_dump_format(pFormatCtx, 0, NULL, 0);
     {
-        std::cerr << "av dump format" << std::endl;
+        LOG(ERROR) << "av dump format";
     }
-    std::cout << "av duration : " << pFormatCtx->duration << std::endl;
-    std::cout << "av nb_streams : " << pFormatCtx->nb_streams << std::endl;
+    DLOG(INFO) << "av duration : " << pFormatCtx->duration;
+    DLOG(INFO) << "av nb_streams : " << pFormatCtx->nb_streams;
 
     int i;
     int ret = 0;
@@ -72,10 +72,10 @@ int CDecode::Init(const char *filePath)
     }
     if (m_videoStream == -1 || m_audioStream == -1)
     {
-        std::cerr << "Didn't find audio(" << m_audioStream << ") or video(" << m_videoStream << ")" << std::endl;
+        LOG(ERROR) << "Didn't find audio(" << m_audioStream << ") or video(" << m_videoStream << ")";
         return -1; // Didn't find a video stream
     }
-    std::cout << "find audio(" << m_audioStream << ")  video(" << m_videoStream << ")" << std::endl;
+    DLOG(INFO) << "find audio(" << m_audioStream << ")  video(" << m_videoStream << ")";
 
     // Get a pointer to the codec context for the video stream
     AVCodec *pCodec = NULL;
@@ -111,7 +111,7 @@ int CDecode::Init(const char *filePath)
     m_audioCodecCtx = avcodec_alloc_context3(audioCodec);
     if (avcodec_copy_context(m_audioCodecCtx, pFormatCtx->streams[m_audioStream]->codec) != 0)
     {
-        fprintf(stderr, "Couldn't copy codec context");
+        LOG(ERROR) << "Couldn't copy codec context";
         return -1; // Error copying codec context
     }
     //ret = avcodec_parameters_to_context(m_audioCodecCtx, pFormatCtx->streams[m_audioStream]->codecpar);
@@ -131,7 +131,7 @@ int CDecode::Init(const char *filePath)
         swr_ctx = swr_alloc();
         if (!swr_ctx)
         {
-            printf("swr_alloc error\n");
+            LOG(ERROR) << "swr_alloc error";
             return -1;
         }
         av_opt_set_channel_layout(swr_ctx, "in_channel_layout", m_audioCodecCtx->channel_layout, 0);
@@ -197,7 +197,7 @@ int CDecode::DecodeFrame(AVFrame* pFrameRGB, double now)
             packet = GetPacket();
             if (packet == NULL)
             {
-                std::cerr << "Packet Empty" << std::endl;
+                LOG(ERROR) << "Packet Empty";
                 break;
             }
             if (packet->stream_index == m_videoStream)
@@ -206,7 +206,7 @@ int CDecode::DecodeFrame(AVFrame* pFrameRGB, double now)
                 ret = avcodec_send_packet(m_pCodecCtx, packet);
                 if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF)
                 {
-                    std::cerr << "send packet Error" << std::endl;
+                    LOG(ERROR) << "send packet Error";
                     av_packet_unref(packet);
                     break;
                 }
@@ -218,13 +218,13 @@ int CDecode::DecodeFrame(AVFrame* pFrameRGB, double now)
                     {
                         pts = av_frame_get_best_effort_timestamp(pFrame);
                     }
-                    std::cout << "BEFORE PTS:" << pts << std::endl;
+                    DLOG(INFO) << "BEFORE PTS:" << pts;
                     pts *= av_q2d(pFormatCtx->streams[m_videoStream]->time_base);
-                    std::cout << "BEFORE PTS2:" << pts << std::endl;
+                    DLOG(INFO) << "BEFORE PTS2:" << pts;
                     pts = synchronize_video(pFrame, pts);
-                    //std::cout << "BEFORE PTS3:" << video_clock << std::endl;
+                    DLOG(INFO) << "BEFORE PTS3:" << video_clock;
                     double diff = pts-now;
-                    std::cout << "DIFF :" << diff << std::endl;
+                    DLOG(INFO) << "DIFF :" << diff;
                     if( diff > 0 )
                         usleep( diff * 1000000);
                     sws_scale(sws_ctx, (uint8_t const *const *)pFrame->data,
@@ -281,7 +281,7 @@ int CDecode::AddAudioPacket(AVPacket *packet)
 
 AVPacket *CDecode::GetAudioPacket()
 {
-    std::cout << "GetAudioPacket: " << m_audioPackets.size() << std::endl;
+    DLOG(INFO) << "GetAudioPacket: " << m_audioPackets.size();
     AVPacket *packet = NULL;
     m_mutex.lock();
     if (!m_audioPackets.empty())
@@ -318,7 +318,7 @@ void CDecode::SaveFrame(AVFrame *pFrame, int width, int height, int iFrame)
 
 void CDecode::onCallback(Uint8 *stream, int len)
 {
-    std::cout << "onCallback :" << len << std::endl;
+    DLOG(INFO) << "onCallback :" << len;
     int len1, audio_size;
 
     //static uint8_t audio_buf[(MAX_AUDIO_FRAME_SIZE * 3) / 2];
@@ -345,7 +345,7 @@ void CDecode::onCallback(Uint8 *stream, int len)
         len1 = m_audio_buf_size - m_audio_buf_index;
         if (len1 > len)
             len1 = len;
-        std::cout << "memcpy(stream)" << std::endl;
+        DLOG(INFO) << "memcpy(stream)";
         memcpy(stream, (uint8_t *)m_audio_buf + m_audio_buf_index, len1);
         len -= len1;
         stream += len1;
@@ -360,7 +360,7 @@ void CDecode::audio_callback(void *userdata, Uint8 *stream, int len)
 
 int CDecode::audio_decode_frame(uint8_t *audio_buf, int buf_size)
 {
-    std::cout << "audio_decode_frame start" << std::endl;
+    DLOG(INFO) << "audio_decode_frame start";
     static AVPacket* pkt;
     //static AVFrame frame;
 
@@ -372,11 +372,10 @@ int CDecode::audio_decode_frame(uint8_t *audio_buf, int buf_size)
         while (m_audio_pkt_size > 0)
         {
             int got_frame = 0;
-            std::cout << "avcodec_decode_audio4" << std::endl;
             len1 = avcodec_decode_audio4(m_audioCodecCtx, frame, &got_frame, pkt);
             if (len1 < 0)
             {
-                std::cerr << "avcodec_decode_audio4 error" << std::endl;
+                LOG(ERROR) << "avcodec_decode_audio4 error";
                 /* if error, skip frame */
                 m_audio_pkt_size = 0;
                 av_frame_unref(frame);
@@ -387,8 +386,6 @@ int CDecode::audio_decode_frame(uint8_t *audio_buf, int buf_size)
             m_audio_pkt_size -= len1;
             if (got_frame)
             {
-                std::cout << "get_frmae" << std::endl;
-
                 data_size = av_samples_get_buffer_size(NULL, m_audioCodecCtx->channels, frame->nb_samples,
                                                       m_audioCodecCtx->sample_fmt, 1);
                 int outSize = av_samples_get_buffer_size(NULL, m_audioCodecCtx->channels, frame->nb_samples,
@@ -400,12 +397,12 @@ int CDecode::audio_decode_frame(uint8_t *audio_buf, int buf_size)
             }
             if (data_size <= 0)
             {
-                std::cerr << "date_size <= 0" << std::endl;
+                LOG(ERROR) << "date_size <= 0";
                 /* No data yet, get more frames */
                 continue;
             }
             /* We have data, return it and come back for more later */
-            std::cout << "audio_decode_frame end:" << data_size << std::endl;
+            DLOG(INFO) << "audio_decode_frame end:" << data_size;
             av_frame_unref(frame);
             //usleep(1000 * 100);
             return data_size;
@@ -427,7 +424,7 @@ int CDecode::audio_decode_frame(uint8_t *audio_buf, int buf_size)
         if(pkt == NULL)
         {
             m_endAudio = true;
-            std::cerr << "GetAudioPacket NULL" << std::endl;
+            LOG(ERROR) << "GetAudioPacket NULL";
             return -1;
         }
         m_audio_pkt_data = pkt->data;
@@ -435,7 +432,6 @@ int CDecode::audio_decode_frame(uint8_t *audio_buf, int buf_size)
     }
 
     av_frame_unref(frame);
-    std::cout << "audio_decode_frame end" << std::endl;
     return 0;
 }
 

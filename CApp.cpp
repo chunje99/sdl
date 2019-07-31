@@ -7,7 +7,6 @@ extern "C"
 #include <libavutil/imgutils.h>
 }
 
-const char* fileName;
 
 //==============================================================================
 CApp::CApp()
@@ -23,6 +22,8 @@ CApp::CApp()
     m_idx = 0;
     wantedSpec = {0};
     audioSpec = {0};
+    m_controller = NULL;
+    m_play = true;
 
     Running = true;
 }
@@ -31,7 +32,7 @@ bool CApp::OnInit()
 {
     //openfile
     m_decoder = new CDecode();
-    if (m_decoder->Init(fileName) != 0)
+    if (m_decoder->Init(m_fileName.c_str()) != 0)
         return false;
 
     //m_decoder->ReadFrame();
@@ -48,13 +49,18 @@ bool CApp::OnInit()
                               m_decoder->GetVideoCtx()->height,
                               0);
 
-    renderer = SDL_CreateRenderer(screen, -1, 0);
-
-    //if ((Surf_Test = CSurface::OnLoad(screen, "myimage.bmp")) == NULL)
-    //{
-    //    return false;
-    //}
-    //tex = SDL_CreateTextureFromSurface(renderer, Surf_Test);
+    renderer = SDL_CreateRenderer(screen, -1, SDL_RENDERER_ACCELERATED);
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    int imgFlags = IMG_INIT_PNG;
+    if (!(IMG_Init(imgFlags) & imgFlags))
+    {
+        LOG(ERROR) << "SDL_image could not initialize! SDL_image Error: " << IMG_GetError();
+    }
+    if ((Surf_Test = CSurface::OnLoad(screen, renderer, "/home/ho80/devel/src/IcoMoon-Free/PNG/64px/019-play.png")) == NULL)
+    {
+        return false;
+    }
+    tex = SDL_CreateTextureFromSurface(renderer, Surf_Test);
 
 
     videoTexture = SDL_CreateTexture(
@@ -97,12 +103,18 @@ bool CApp::OnInit()
 
         if (SDL_OpenAudio(&wantedSpec, &audioSpec) < 0)
         {
-            std::cerr << "SDL_OpenAudio: " << SDL_GetError() << std::endl;
+            LOG(ERROR) << "SDL_OpenAudio: " << SDL_GetError();
             return false;
         }
 
         SDL_PauseAudio(0);
     }
+
+    m_controller = new CController();
+    m_controller->OnInit(screen, renderer);
+    m_controller->OnLoad();
+    //m_controller->m_playButton.SetOnLButtonClick([this](){OnPlayClick();});
+    //m_controller->m_switchButton.SetOnLButtonClick([this](){OnExit();});
     return true;
 }
 
@@ -115,16 +127,16 @@ int CApp::OnExecute()
     }
 
     m_now = std::chrono::system_clock::now();
-    SDL_Event Event;
     while (Running)
     {
-        while (SDL_PollEvent(&Event))
+        while (SDL_PollEvent(&m_event))
         {
-            OnEvent(&Event);
+            OnEvent(&m_event);
         }
 
         OnLoop();
         OnRender();
+        usleep(100);
     }
 
     OnCleanup();
@@ -135,24 +147,37 @@ int CApp::OnExecute()
 void CApp::OnEvent(SDL_Event *Event)
 {
     CEvent::OnEvent(Event);
+    m_controller->OnEvent(Event);
 }
 
 void CApp::OnRender()
 {
-    //CSurface::OnDraw(renderer, tex, Surf_Test, X, Y);
-    CSurface::OnDraw(renderer, videoTexture, X, Y,
+    SDL_RenderClear(renderer);
+    CSurface::OnDrawPlayer(renderer, videoTexture, 0, 0,
                               m_decoder->GetVideoCtx()->width/2,
                               m_decoder->GetVideoCtx()->height/2 );
+    /*
+    CSurface::OnDraw(renderer, tex, Surf_Test,
+                     m_decoder->GetVideoCtx()->width / 2,
+                     m_decoder->GetVideoCtx()->height / 2);
+                     */
+    m_controller->OnDraw();
+    SDL_RenderPresent(renderer);
 }
 void CApp::OnLoop()
 {
     auto now = std::chrono::system_clock::now();
     std::chrono::duration<double> diff = now-m_now;
+    m_now = now;
+    if(!m_play)
+    {
+        return;
+    }
+    m_playTime += diff;
     //double diff2 = now-m_now;
-    if (m_decoder->DecodeFrame(pFrameRGB, diff.count()) == 0)
+    if (m_decoder->DecodeFrame(pFrameRGB, m_playTime.count()) == 0)
     {
         SDL_UpdateTexture(videoTexture, NULL, pFrameRGB->data[0], pFrameRGB->linesize[0]);
-        usleep(100);
     }
 }
 
@@ -179,7 +204,7 @@ void CApp::OnExit()
 
 void CApp::OnKeyDown(SDL_Keycode sym, Uint16 mod, SDL_Scancode scancode)
 {
-    std::cout << "On KeyDown: " << sym << std::endl;
+    DLOG(INFO) << "On KeyDown: " << sym;
     switch (sym)
     {
     case (SDLK_RIGHT):
@@ -206,33 +231,34 @@ void CApp::OnKeyDown(SDL_Keycode sym, Uint16 mod, SDL_Scancode scancode)
 
 void CApp::OnKeyUp(SDL_Keycode sym, Uint16 mod, SDL_Scancode scancode)
 {
-    std::cout << "On KeyUp: " << sym << std::endl;
+    DLOG(INFO) << "On KeyUp: " << sym;
     switch (sym)
     {
     case (SDLK_RIGHT):
-        std::cout << "RIGHT" << std::endl;
+        DLOG(INFO) << "RIGHT";
         break;
     case (SDLK_LEFT):
-        std::cout << "LEFT" << std::endl;
+        DLOG(INFO) << "LEFT";
         break;
     case (SDLK_UP):
-        std::cout << "UP" << std::endl;
+        DLOG(INFO) << "UP";
         break;
     case (SDLK_DOWN):
-        std::cout << "DOWN" << std::endl;
+        DLOG(INFO) << "DOWN";
         break;
     }
 }
 void CApp::OnMouseMove(int mX, int mY, int relX, int relY, bool Left, bool Right, bool Middle)
 {
-    std::cout << "mX:" << mX << "mY:" << mY << "relX:" << relX << "relY:" << relY << std::endl;
+    DLOG(INFO) << "mX:" << mX << "mY:" << mY << "relX:" << relX << "relY:" << relY;
     X = mX;
     Y = mY;
 }
 
 void CApp::OnAudioCallback(Uint8 *stream, int len)
 {
-    m_decoder->onCallback(stream, len);
+    if(m_play)
+        m_decoder->onCallback(stream, len);
 }
 
 void CApp::AudioCallback(void *userdata, uint8_t * stream, int len)
@@ -240,16 +266,60 @@ void CApp::AudioCallback(void *userdata, uint8_t * stream, int len)
     static_cast<CApp*>(userdata)->OnAudioCallback(stream, len);
 }
 //==============================================================================
+void CApp::SetFileName(const char *fileName)
+{
+    m_fileName = fileName;
+}
+
+void CApp::OnPlayClick()
+{
+    LOG(INFO) << "OnPlayClick";
+    if(m_play)
+        m_play = false;
+    else
+        m_play = true;
+}
+
+void CApp::OnUser(Uint8 type, int code, void *data1, void *data2)
+{
+
+    switch (type)
+    {
+    case USER_EVNET_TYPE_BUTTON:
+    {
+        if (data1 == NULL)
+            break;
+        CButton* button = (CButton*)data1;
+        switch (code)
+        {
+        case USER_EVNET_CODE_LCLICK:
+            DLOG(INFO) << "Button LClick:" << button->GetName();
+            if(button->GetName() == "Play")
+                OnPlayClick();
+            else if(button->GetName() == "Switch")
+                OnExit();
+            break;
+        case USER_EVNET_CODE_MOUSEOUT:
+            LOG(INFO) << "Mouse Out:" << button->GetName();
+            break;
+        case USER_EVNET_CODE_MOUSEOVER:
+            LOG(INFO) << "Mouse Over:" << button->GetName();
+            break;
+        }
+        break;
+    }
+    }
+}
+
+DEFINE_string(file, "", "video file name");
 int main(int argc, char *argv[])
 {
-    if(argc != 2)
-    {
-        std::cerr << argv[0] << " file" << std::endl;
-        return -1;
-    }
+    google::InitGoogleLogging(argv[0]);
+    gflags::ParseCommandLineFlags(&argc, &argv, true);
+    LOG(INFO) << "FileName = " << FLAGS_file;
 
-    fileName = argv[1];
     CApp theApp;
+    theApp.SetFileName(FLAGS_file.c_str());
 
     return theApp.OnExecute();
 }

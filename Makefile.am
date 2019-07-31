@@ -4,14 +4,22 @@ CApp_SOURCES = CApp.cpp
 CApp_SOURCES += CSurface.cpp
 CApp_SOURCES += CEvent.cpp
 CApp_SOURCES += Decode.cpp
+CApp_SOURCES += CController.cpp
+CApp_SOURCES += CButton.cpp
 
 CApp_LDADD = -lpthread 
 CApp_LDADD += $(SDL2_LIBS)
 CApp_LDADD += $(FFMPEG_LIBS)
+CApp_LDADD += $(GFLAGS_LIBS)
+CApp_LDADD += $(GLOG_LIBS)
 CApp_CXXFLAGS = $(SDL2_CFLAGS)
 CApp_CXXFLAGS += $(FFMPEG_CFLAGS)
+CApp_CXXFLAGS += $(GFLAGS_CFLAGS)
+CApp_CXXFLAGS += $(GLOG_CFLAGS)
 CApp_LDFLAGS = $(SDL2_LDFLAGS)
 CApp_LDFLAGS += $(FFMPEG_LDFLAGS) 
+CApp_LDFLAGS += $(GFLAGS_LDFLAGS) 
+CApp_LDFLAGS += $(GLOG_LDFLAGS) 
 
 
 playTest_SOURCES = playTest.cpp

@@ -1,16 +1,31 @@
 {
     "configurations": [
         {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/usr/local/include/SDL2/",
+                "/usr/include/x86_64-linux-gnu"
+            ],
+            "defines": [],
+            "macFrameworkPath": [],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "clang-x64"
+        },
+        {
             "name": "Mac",
             "includePath": [
                 "${workspaceFolder}/**",
                 "/usr/local/include/SDL2/",
                 "/usr/local/include/SDL/",
-                "/usr/local/Cellar/ffmpeg/4.1_2/include/"
+                "/usr/local/Cellar/ffmpeg/4.1_2/include/",
+                "/usr/include/x86_64-linux-gnu"
             ],
             "defines": [],
             "macFrameworkPath": [],
-            "compilerPath": "/usr/local/bin/gcc-8",
+            "compilerPath": "/usr/bin/gcc",
             "cStandard": "c11",
             "cppStandard": "c++17",
             "intelliSenseMode": "clang-x64"
