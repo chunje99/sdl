@@ -33,7 +33,7 @@ bool CApp::OnInit()
 {
     //openfile
     m_decoder = new CDecode();
-    if (m_decoder->Init(m_fileName.c_str()) != 0)
+    if (m_decoder->Init(this, m_fileName.c_str()) != 0)
     {
         LOG(ERROR) << "Decoder Error";
         return false;
@@ -153,6 +153,7 @@ void CApp::OnEvent(SDL_Event *Event)
 {
     CEvent::OnEvent(Event);
     m_controller->OnEvent(Event);
+    m_decoder->OnEvent(Event);
 }
 
 void CApp::OnRender()

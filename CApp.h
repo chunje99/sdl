@@ -15,10 +15,10 @@
 #include <gflags/gflags.h>
 
 //==============================================================================
+class CDecode;
 class CApp : public CEvent
 {
 private:
-    bool Running;
 
     SDL_Event m_event;
     SDL_Surface *Surf_Display;
@@ -43,6 +43,7 @@ private:
     bool m_play;
 
 public:
+    bool Running;
     CApp();
 
     int OnExecute();

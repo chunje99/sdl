@@ -19,17 +19,20 @@ extern "C"
 #include <SDL.h>
 #include <SDL_thread.h>
 #include <glog/logging.h>
+#include "CEvent.h"
+#include "CApp.h"
 
 #define SDL_AUDIO_BUFFER_SIZE 1024
 #define MAX_AUDIO_FRAME_SIZE 192000
 #define AVCODEC_MAX_AUDIO_FRAME_SIZE 192000 // 1 second of 48khz 32bit audio
 
-class CDecode
+class CApp;
+class CDecode : public CEvent
 {
 public:
     CDecode();
     ~CDecode();
-    int Init(const char *filePath);
+    int Init(CApp* capp, const char *filePath);
     int ReadFrame();
     int DecodeFrame(AVFrame *pFrameRGB, double now);
 
@@ -74,6 +77,8 @@ private:
 	uint8_t converted_data[(192000 * 3) / 2];
     uint8_t* converted;
     double m_basePts;
+    bool Running;
+    CApp* m_capp;
 };
 
 #endif

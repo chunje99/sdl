@@ -21,6 +21,7 @@ CDecode::CDecode() : pFormatCtx(NULL)
     m_thread[0] = NULL;
     m_thread[1] = NULL;
     m_basePts = -1;
+    Running = true;
 }
 
 CDecode::~CDecode()
@@ -31,8 +32,9 @@ CDecode::~CDecode()
         m_thread[1]->join();
 }
 
-int CDecode::Init(const char *filePath)
+int CDecode::Init(CApp* capp, const char *filePath)
 {
+    m_capp = capp;
     // Open video file
     pFormatCtx = avformat_alloc_context();
     if (avformat_open_input(&pFormatCtx, filePath, NULL, NULL) != 0)
@@ -161,7 +163,7 @@ int CDecode::ReadFrame()
 {
     AVPacket *packet;
     packet = av_packet_alloc();
-    while (av_read_frame(pFormatCtx, packet) >= 0)
+    while (av_read_frame(pFormatCtx, packet) >= 0 && m_capp->Running)
     {
         // Is this a packet from the video stream?
         if (packet->stream_index == m_videoStream)
@@ -191,9 +193,9 @@ int CDecode::DecodeFrame(AVFrame* pFrameRGB, double now)
     AVFrame *pFrame = av_frame_alloc();
     // Allocate an AVFrame structure
     int ret;
-    while (1)
+    while (m_capp->Running)
     {
-        while (1)
+        while (m_capp->Running)
         {
             packet = GetPacket();
             if (packet == NULL)
@@ -367,9 +369,9 @@ int CDecode::audio_decode_frame(uint8_t *audio_buf, int buf_size)
     int len1, data_size = 0, len2;
 
     AVFrame *frame = av_frame_alloc();
-    for (;;)
+    for (;m_capp->Running;)
     {
-        while (m_audio_pkt_size > 0)
+        while (m_audio_pkt_size > 0 && m_capp->Running)
         {
             int got_frame = 0;
             len1 = avcodec_decode_audio4(m_audioCodecCtx, frame, &got_frame, pkt);
