@@ -2,6 +2,7 @@
 #include "CApp.h"
 #include <unistd.h>
 #include <chrono>
+#include "config.h"
 extern "C"
 {
 #include <libavutil/imgutils.h>
@@ -33,16 +34,20 @@ bool CApp::OnInit()
     //openfile
     m_decoder = new CDecode();
     if (m_decoder->Init(m_fileName.c_str()) != 0)
+    {
+        LOG(ERROR) << "Decoder Error";
         return false;
+    }
 
     //m_decoder->ReadFrame();
 
     if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
     {
+        LOG(ERROR) << "SDL_Init Error";
         return false;
     }
 
-    screen = SDL_CreateWindow("My Game Window",
+    screen = SDL_CreateWindow("My Window",
                               SDL_WINDOWPOS_UNDEFINED,
                               SDL_WINDOWPOS_UNDEFINED,
                               m_decoder->GetVideoCtx()->width,
@@ -56,12 +61,6 @@ bool CApp::OnInit()
     {
         LOG(ERROR) << "SDL_image could not initialize! SDL_image Error: " << IMG_GetError();
     }
-    if ((Surf_Test = CSurface::OnLoad(screen, renderer, "/home/ho80/devel/src/IcoMoon-Free/PNG/64px/019-play.png")) == NULL)
-    {
-        return false;
-    }
-    tex = SDL_CreateTextureFromSurface(renderer, Surf_Test);
-
 
     videoTexture = SDL_CreateTexture(
         renderer,
@@ -111,10 +110,16 @@ bool CApp::OnInit()
     }
 
     m_controller = new CController();
-    m_controller->OnInit(screen, renderer);
-    m_controller->OnLoad();
-    //m_controller->m_playButton.SetOnLButtonClick([this](){OnPlayClick();});
-    //m_controller->m_switchButton.SetOnLButtonClick([this](){OnExit();});
+    if(!(m_controller->OnInit(screen, renderer)))
+    {
+        LOG(ERROR) << "Controller Init Error";
+        return false;
+    }
+    if(!m_controller->OnLoad())
+    {
+        LOG(ERROR) << "Controller Load Error";
+        return false;
+    }
     return true;
 }
 
@@ -156,11 +161,6 @@ void CApp::OnRender()
     CSurface::OnDrawPlayer(renderer, videoTexture, 0, 0,
                               m_decoder->GetVideoCtx()->width/2,
                               m_decoder->GetVideoCtx()->height/2 );
-    /*
-    CSurface::OnDraw(renderer, tex, Surf_Test,
-                     m_decoder->GetVideoCtx()->width / 2,
-                     m_decoder->GetVideoCtx()->height / 2);
-                     */
     m_controller->OnDraw();
     SDL_RenderPresent(renderer);
 }
@@ -202,62 +202,9 @@ void CApp::OnExit()
     Running = false;
 }
 
-void CApp::OnKeyDown(SDL_Keycode sym, Uint16 mod, SDL_Scancode scancode)
-{
-    DLOG(INFO) << "On KeyDown: " << sym;
-    switch (sym)
-    {
-    case (SDLK_RIGHT):
-        X++;
-        break;
-    case (SDLK_LEFT):
-        X--;
-        break;
-    case (SDLK_UP):
-        Y--;
-        break;
-    case (SDLK_DOWN):
-        Y++;
-        break;
-    case (SDLK_ESCAPE):
-    case (SDLK_END):
-        OnExit();
-    }
-    if (X < 0)
-        X = 0;
-    if (Y < 0)
-        Y = 0;
-}
-
-void CApp::OnKeyUp(SDL_Keycode sym, Uint16 mod, SDL_Scancode scancode)
-{
-    DLOG(INFO) << "On KeyUp: " << sym;
-    switch (sym)
-    {
-    case (SDLK_RIGHT):
-        DLOG(INFO) << "RIGHT";
-        break;
-    case (SDLK_LEFT):
-        DLOG(INFO) << "LEFT";
-        break;
-    case (SDLK_UP):
-        DLOG(INFO) << "UP";
-        break;
-    case (SDLK_DOWN):
-        DLOG(INFO) << "DOWN";
-        break;
-    }
-}
-void CApp::OnMouseMove(int mX, int mY, int relX, int relY, bool Left, bool Right, bool Middle)
-{
-    DLOG(INFO) << "mX:" << mX << "mY:" << mY << "relX:" << relX << "relY:" << relY;
-    X = mX;
-    Y = mY;
-}
-
 void CApp::OnAudioCallback(Uint8 *stream, int len)
 {
-    if(m_play)
+    if(m_play && Running )
         m_decoder->onCallback(stream, len);
 }
 
@@ -315,7 +262,11 @@ DEFINE_string(file, "", "video file name");
 int main(int argc, char *argv[])
 {
     google::InitGoogleLogging(argv[0]);
+#if defined OS_LINUX
     gflags::ParseCommandLineFlags(&argc, &argv, true);
+#elif defined OS_MAC
+    google::ParseCommandLineFlags(&argc, &argv, true);
+#endif
     LOG(INFO) << "FileName = " << FLAGS_file;
 
     CApp theApp;

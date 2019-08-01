@@ -20,8 +20,7 @@
                 "${workspaceFolder}/**",
                 "/usr/local/include/SDL2/",
                 "/usr/local/include/SDL/",
-                "/usr/local/Cellar/ffmpeg/4.1_2/include/",
-                "/usr/include/x86_64-linux-gnu"
+                "/usr/local/Cellar/ffmpeg/4.1_2/include/"
             ],
             "defines": [],
             "macFrameworkPath": [],

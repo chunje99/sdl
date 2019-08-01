@@ -20,6 +20,7 @@ CDecode::CDecode() : pFormatCtx(NULL)
     converted = &converted_data[0];
     m_thread[0] = NULL;
     m_thread[1] = NULL;
+    m_basePts = -1;
 }
 
 CDecode::~CDecode()
@@ -218,13 +219,12 @@ int CDecode::DecodeFrame(AVFrame* pFrameRGB, double now)
                     {
                         pts = av_frame_get_best_effort_timestamp(pFrame);
                     }
-                    DLOG(INFO) << "BEFORE PTS:" << pts;
+                    if (m_basePts < 0)
+                        m_basePts = pts;
+                    pts -= m_basePts;
                     pts *= av_q2d(pFormatCtx->streams[m_videoStream]->time_base);
-                    DLOG(INFO) << "BEFORE PTS2:" << pts;
                     pts = synchronize_video(pFrame, pts);
-                    DLOG(INFO) << "BEFORE PTS3:" << video_clock;
                     double diff = pts-now;
-                    DLOG(INFO) << "DIFF :" << diff;
                     if( diff > 0 )
                         usleep( diff * 1000000);
                     sws_scale(sws_ctx, (uint8_t const *const *)pFrame->data,
@@ -255,6 +255,8 @@ int CDecode::AddPacket(AVPacket *packet)
     m_mutex.lock();
     m_packets.push(packet);
     m_mutex.unlock();
+    if(m_packets.size() > 100)
+        usleep(1000*20);
     return 0;
 }
 
@@ -276,12 +278,13 @@ int CDecode::AddAudioPacket(AVPacket *packet)
     m_mutex.lock();
     m_audioPackets.push(packet);
     m_mutex.unlock();
+    if(m_audioPackets.size() > 10)
+        usleep(1000*20);
     return 0;
 }
 
 AVPacket *CDecode::GetAudioPacket()
 {
-    DLOG(INFO) << "GetAudioPacket: " << m_audioPackets.size();
     AVPacket *packet = NULL;
     m_mutex.lock();
     if (!m_audioPackets.empty())
@@ -318,7 +321,6 @@ void CDecode::SaveFrame(AVFrame *pFrame, int width, int height, int iFrame)
 
 void CDecode::onCallback(Uint8 *stream, int len)
 {
-    DLOG(INFO) << "onCallback :" << len;
     int len1, audio_size;
 
     //static uint8_t audio_buf[(MAX_AUDIO_FRAME_SIZE * 3) / 2];
@@ -345,7 +347,6 @@ void CDecode::onCallback(Uint8 *stream, int len)
         len1 = m_audio_buf_size - m_audio_buf_index;
         if (len1 > len)
             len1 = len;
-        DLOG(INFO) << "memcpy(stream)";
         memcpy(stream, (uint8_t *)m_audio_buf + m_audio_buf_index, len1);
         len -= len1;
         stream += len1;
@@ -360,7 +361,6 @@ void CDecode::audio_callback(void *userdata, Uint8 *stream, int len)
 
 int CDecode::audio_decode_frame(uint8_t *audio_buf, int buf_size)
 {
-    DLOG(INFO) << "audio_decode_frame start";
     static AVPacket* pkt;
     //static AVFrame frame;
 
@@ -402,7 +402,6 @@ int CDecode::audio_decode_frame(uint8_t *audio_buf, int buf_size)
                 continue;
             }
             /* We have data, return it and come back for more later */
-            DLOG(INFO) << "audio_decode_frame end:" << data_size;
             av_frame_unref(frame);
             //usleep(1000 * 100);
             return data_size;

@@ -73,6 +73,7 @@ private:
     SwrContext *swr_ctx;
 	uint8_t converted_data[(192000 * 3) / 2];
     uint8_t* converted;
+    double m_basePts;
 };
 
 #endif

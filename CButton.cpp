@@ -12,6 +12,7 @@ bool CButton::OnInit(SDL_Window* screen, SDL_Renderer* renderer, const char* nam
     m_screen = screen;
     m_renderer = renderer;
     m_name = name;
+    return true;
 }
 
 bool CButton::OnLoad(char* filePath)
@@ -49,7 +50,6 @@ void CButton::OnEvent(SDL_Event *Event)
 
 void CButton::OnMouseMove(int mX, int mY, int relX, int relY, bool Left, bool Right, bool Middle)
 {
-    DLOG(INFO) << "CButton::   mX:" << mX << "mY:" << mY << "relX:" << relX << "relY:" << relY;
     if (mX >= m_rect.x && mX <= m_rect.x + m_rect.w &&
         mY >= m_rect.y && mY <= m_rect.y + m_rect.w)
         OnMouseOver();

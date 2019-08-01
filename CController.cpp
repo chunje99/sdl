@@ -10,38 +10,57 @@ bool CController::OnInit(SDL_Window *screen, SDL_Renderer *renderer)
     m_renderer = renderer;
     SDL_GetWindowSize(m_screen, &m_windowW, &m_windowH);
     SDL_Rect tRect;
+    int pngSize = 100;
     tRect.x = 0;
-    tRect.y = m_windowH - 64;
-    tRect.w = 64;
-    tRect.h = 64;
+    tRect.y = m_windowH - pngSize;
+    tRect.w = pngSize;
+    tRect.h = pngSize;
 
     if(!m_playButton.OnInit(m_screen, m_renderer, "Play"))
+    {
+        LOG(ERROR) << "Button Error Play";
         return false;
+    }
     m_playButton.SetRect(&tRect);
 
-    tRect.x += 64;
+    tRect.x += pngSize;
     if(!m_stopButton.OnInit(m_screen, m_renderer, "Stop"))
+    {
+        LOG(ERROR) << "Button Error Stop";
         return false;
+    }
     m_stopButton.SetRect(&tRect);
 
-    tRect.x += 64;
+    tRect.x += pngSize;
     if(!m_play2Button.OnInit(m_screen, m_renderer, "Play2"))
+    {
+        LOG(ERROR) << "Button Error Play2";
         return false;
+    }
     m_play2Button.SetRect(&tRect);
 
-    tRect.x += 64;
+    tRect.x += pngSize;
     if(!m_stop2Button.OnInit(m_screen, m_renderer, "Stop2"))
+    {
+        LOG(ERROR) << "Button Error Stop2";
         return false;
+    }
     m_stop2Button.SetRect(&tRect);
 
-    tRect.x += 64;
+    tRect.x += pngSize;
     if(!m_cogButton.OnInit(m_screen, m_renderer, "Cog"))
+    {
+        LOG(ERROR) << "Button Error Cog";
         return false;
+    }
     m_cogButton.SetRect(&tRect);
     
-    tRect.x += 64;
+    tRect.x += pngSize;
     if(!m_switchButton.OnInit(m_screen, m_renderer, "Switch"))
+    {
+        LOG(ERROR) << "Button Error Switch";
         return false;
+    }
     m_switchButton.SetRect(&tRect);
 
     return true;
@@ -49,17 +68,17 @@ bool CController::OnInit(SDL_Window *screen, SDL_Renderer *renderer)
 
 bool CController::OnLoad()
 {
-    if (!m_playButton.OnLoad("/home/ho80/devel/src/IcoMoon-Free/PNG/64px/019-play.png"))
+    if (!m_playButton.OnLoad("images/icons8-play-100.png"))
         return false;
-    if (!m_stopButton.OnLoad("/home/ho80/devel/src/IcoMoon-Free/PNG/64px/280-stop.png"))
+    if (!m_stopButton.OnLoad("images/icons8-stop-100.png"))
         return false;
-    if (!m_play2Button.OnLoad("/home/ho80/devel/src/IcoMoon-Free/PNG/64px/278-play2.png"))
+    if (!m_play2Button.OnLoad("images/icons8-play-100.png"))
         return false;
-    if (!m_stop2Button.OnLoad("/home/ho80/devel/src/IcoMoon-Free/PNG/64px/287-stop2.png"))
+    if (!m_stop2Button.OnLoad("images/icons8-stop-100.png"))
         return false;
-    if (!m_cogButton.OnLoad("/home/ho80/devel/src/IcoMoon-Free/PNG/64px/149-cog.png"))
+    if (!m_cogButton.OnLoad("images/icons8-edit-100.png"))
         return false;
-    if (!m_switchButton.OnLoad("/home/ho80/devel/src/IcoMoon-Free/PNG/64px/183-switch.png"))
+    if (!m_switchButton.OnLoad("images/icons8-shutdown-100.png"))
         return false;
     return true;
 }

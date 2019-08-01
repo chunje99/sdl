@@ -61,12 +61,6 @@ public:
 
     void OnExit();
 
-	void OnKeyDown(SDL_Keycode sym, Uint16 mod, SDL_Scancode scancode);
-
-	void OnKeyUp(SDL_Keycode sym, Uint16 mod, SDL_Scancode scancode);
-
-	void OnMouseMove(int mX, int mY, int relX, int relY, bool Left, bool Right, bool Middle);
-
     void OnUser(Uint8 type, int code, void *data1, void *data2);
 
     void OnPlayClick();

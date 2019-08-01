@@ -48,6 +48,28 @@ fi
 # Checks for header files.
 
 # Checks for typedefs, structures, and compiler characteristics.
+# AC_CANONICAL_HOST is needed to access the 'host_os' variable    
+AC_CANONICAL_HOST
+# Detect the target system
+case "${host_os}" in
+    linux*)
+        AC_DEFINE([OS_LINUX], ["LINUX"], ["OS TYPE"])
+        ;;
+    cygwin*|mingw*)
+        AC_DEFINE([OS_WINDOWS], ["WINDOWS"], ["OS TYPE"])
+        ;;
+    darwin*)
+        AC_DEFINE([OS_MAC], ["MAC"], ["OS TYPE"])
+        ;;
+    *)
+        AC_MSG_ERROR(["OS $host_os is not supported"])
+        ;;
+esac
+
+## Pass the conditionals to automake
+#AM_CONDITIONAL([LINUX], [test "$build_linux" = "yes"])
+#AM_CONDITIONAL([WINDOWS], [test "$build_windows" = "yes"])
+#AM_CONDITIONAL([OSX], [test "$build_mac" = "yes"])
 
 PKG_CONFIG
 # Checks for library functions.
