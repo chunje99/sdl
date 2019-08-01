@@ -207,6 +207,8 @@ void CApp::OnAudioCallback(Uint8 *stream, int len)
 {
     if(m_play && Running )
         m_decoder->onCallback(stream, len);
+    else
+        memset(stream, 0, len);
 }
 
 void CApp::AudioCallback(void *userdata, uint8_t * stream, int len)

@@ -22,6 +22,7 @@ CDecode::CDecode() : pFormatCtx(NULL)
     m_thread[1] = NULL;
     m_basePts = -1;
     Running = true;
+    pFrame = av_frame_alloc();
 }
 
 CDecode::~CDecode()
@@ -177,11 +178,13 @@ int CDecode::ReadFrame()
         }
         else
         {
-            av_packet_unref(packet);
+            //av_packet_unref(packet);
+            av_packet_free(&packet);
         }
         packet = av_packet_alloc();
     }
-    av_packet_unref(packet);
+    //av_packet_unref(packet);
+    av_packet_free(&packet);
 
     m_endFrame = true;
     return 0;
@@ -190,7 +193,6 @@ int CDecode::ReadFrame()
 int CDecode::DecodeFrame(AVFrame* pFrameRGB, double now)
 {
     AVPacket *packet;
-    AVFrame *pFrame = av_frame_alloc();
     // Allocate an AVFrame structure
     int ret;
     while (m_capp->Running)
@@ -210,7 +212,8 @@ int CDecode::DecodeFrame(AVFrame* pFrameRGB, double now)
                 if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF)
                 {
                     LOG(ERROR) << "send packet Error";
-                    av_packet_unref(packet);
+                    //av_packet_unref(packet);
+                    av_packet_free(&packet);
                     break;
                 }
 
@@ -236,10 +239,12 @@ int CDecode::DecodeFrame(AVFrame* pFrameRGB, double now)
                     pFrameRGB->best_effort_timestamp = pFrame->best_effort_timestamp;
                     pFrameRGB->pts = pFrame->pts;
                     pFrameRGB->pkt_pts = pFrame->pkt_pts;
-                    av_packet_unref(packet);
+                    //av_packet_unref(packet);
+                    av_packet_free(&packet);
                     return 0;
                 }
-                av_packet_unref(packet);
+                //av_packet_unref(packet);
+                av_packet_free(&packet);
             }
             else if (packet->stream_index == m_audioStream)
             {
@@ -257,8 +262,11 @@ int CDecode::AddPacket(AVPacket *packet)
     m_mutex.lock();
     m_packets.push(packet);
     m_mutex.unlock();
-    if(m_packets.size() > 100)
-        usleep(1000*20);
+    if(m_packets.size() > 10)
+    {
+        LOG(INFO) << "video packet size:" << m_packets.size();
+        usleep(1000*200);
+    }
     return 0;
 }
 
@@ -281,7 +289,10 @@ int CDecode::AddAudioPacket(AVPacket *packet)
     m_audioPackets.push(packet);
     m_mutex.unlock();
     if(m_audioPackets.size() > 10)
-        usleep(1000*20);
+    {
+        LOG(INFO) << "audio packets :" << m_audioPackets.size();
+        usleep(1000*200);
+    }
     return 0;
 }
 
@@ -368,19 +379,20 @@ int CDecode::audio_decode_frame(uint8_t *audio_buf, int buf_size)
 
     int len1, data_size = 0, len2;
 
-    AVFrame *frame = av_frame_alloc();
+    AVFrame *aFrame = av_frame_alloc();
     for (;m_capp->Running;)
     {
         while (m_audio_pkt_size > 0 && m_capp->Running)
         {
             int got_frame = 0;
-            len1 = avcodec_decode_audio4(m_audioCodecCtx, frame, &got_frame, pkt);
+            len1 = avcodec_decode_audio4(m_audioCodecCtx, aFrame, &got_frame, pkt);
             if (len1 < 0)
             {
                 LOG(ERROR) << "avcodec_decode_audio4 error";
                 /* if error, skip frame */
                 m_audio_pkt_size = 0;
-                av_frame_unref(frame);
+                //av_frame_unref(aFrame);
+                av_frame_free(&aFrame);
                 break;
             }
             //data_size = 0;
@@ -388,12 +400,12 @@ int CDecode::audio_decode_frame(uint8_t *audio_buf, int buf_size)
             m_audio_pkt_size -= len1;
             if (got_frame)
             {
-                data_size = av_samples_get_buffer_size(NULL, m_audioCodecCtx->channels, frame->nb_samples,
+                data_size = av_samples_get_buffer_size(NULL, m_audioCodecCtx->channels, aFrame->nb_samples,
                                                       m_audioCodecCtx->sample_fmt, 1);
-                int outSize = av_samples_get_buffer_size(NULL, m_audioCodecCtx->channels, frame->nb_samples,
+                int outSize = av_samples_get_buffer_size(NULL, m_audioCodecCtx->channels, aFrame->nb_samples,
                                                          AV_SAMPLE_FMT_FLT, 1);
-                len2 = swr_convert(swr_ctx, &converted, frame->nb_samples, 
-                        (const uint8_t **)&frame->data[0], frame->nb_samples);
+                len2 = swr_convert(swr_ctx, &converted, aFrame->nb_samples, 
+                        (const uint8_t **)&aFrame->data[0], aFrame->nb_samples);
 				memcpy(audio_buf, converted_data, outSize);
 				data_size = outSize;
             }
@@ -404,14 +416,16 @@ int CDecode::audio_decode_frame(uint8_t *audio_buf, int buf_size)
                 continue;
             }
             /* We have data, return it and come back for more later */
-            av_frame_unref(frame);
+            //av_frame_unref(aFrame);
+            av_frame_free(&aFrame);
             //usleep(1000 * 100);
             return data_size;
         }
         //av_free_packet(pkt);
         if (pkt && pkt->data)
         {
-            av_packet_unref(pkt);
+            //av_packet_unref(pkt);
+            av_packet_free(&pkt);
         }
 
         /*
@@ -432,7 +446,8 @@ int CDecode::audio_decode_frame(uint8_t *audio_buf, int buf_size)
         m_audio_pkt_size = pkt->size;
     }
 
-    av_frame_unref(frame);
+    //av_frame_unref(aFrame);
+    av_frame_free(&aFrame);
     return 0;
 }
 

@@ -24,7 +24,7 @@
 			"request": "launch",
 			"program": "${workspaceFolder}/CApp",
 			"args": [
-				"-file=SampleVideo_1280x720_20mb.mp4",
+				"-file=/media/ho80/CC9CF9B89CF99CE0/다운로드/에반게리온 Q/신세기 에반게리온 Q.mkv",
 				"-logtostderr"
 			],
 			"stopAtEntry": false,

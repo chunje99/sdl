@@ -79,6 +79,7 @@ private:
     double m_basePts;
     bool Running;
     CApp* m_capp;
+    AVFrame *pFrame;
 };
 
 #endif
