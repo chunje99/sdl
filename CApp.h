@@ -16,6 +16,7 @@
 
 //==============================================================================
 class CDecode;
+class CController;
 class CApp : public CEvent
 {
 private:
@@ -37,6 +38,7 @@ private:
     int m_idx;
     std::chrono::time_point<std::chrono::system_clock> m_now;
     std::chrono::duration<double> m_playTime;
+    double m_curPos;
     SDL_AudioSpec wantedSpec;
     SDL_AudioSpec audioSpec;
     std::string m_fileName;
@@ -65,6 +67,16 @@ public:
     void OnUser(Uint8 type, int code, void *data1, void *data2);
 
     void OnPlayClick();
+
+    void OnPauseClick();
+
+    void OnStopClick();
+
+    void OnRewindClick();
+
+    void OnFFClick();
+
+    double GetCurPos(){return m_curPos;};
 
 public:
     void OnAudioCallback(Uint8 *stream, int len);

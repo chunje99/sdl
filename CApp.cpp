@@ -27,6 +27,7 @@ CApp::CApp()
     m_play = true;
 
     Running = true;
+    m_curPos = 0;
 }
 
 bool CApp::OnInit()
@@ -110,7 +111,7 @@ bool CApp::OnInit()
     }
 
     m_controller = new CController();
-    if(!(m_controller->OnInit(screen, renderer)))
+    if(!(m_controller->OnInit(this, screen, renderer)))
     {
         LOG(ERROR) << "Controller Init Error";
         return false;
@@ -180,6 +181,7 @@ void CApp::OnLoop()
     {
         SDL_UpdateTexture(videoTexture, NULL, pFrameRGB->data[0], pFrameRGB->linesize[0]);
     }
+    m_curPos = m_playTime.count() * 100 / (m_decoder->GetDuraion()/1000000);
 }
 
 void CApp::OnCleanup()
@@ -224,10 +226,35 @@ void CApp::SetFileName(const char *fileName)
 void CApp::OnPlayClick()
 {
     LOG(INFO) << "OnPlayClick";
-    if(m_play)
-        m_play = false;
-    else
-        m_play = true;
+    m_play = true;
+    m_controller->m_playButton.SetVisible(false);
+    m_controller->m_pauseButton.SetVisible(true);
+}
+void CApp::OnStopClick()
+{
+    LOG(INFO) << "OnStopClick";
+    OnExit();
+}
+void CApp::OnPauseClick()
+{
+    LOG(INFO) << "OnPauseClick";
+    m_play = false;
+    m_controller->m_playButton.SetVisible(true);
+    m_controller->m_pauseButton.SetVisible(false);
+}
+
+void CApp::OnRewindClick()
+{
+    LOG(INFO) << "OnRewindClick";
+    m_decoder->Seek(-10.0, 0);
+    m_playTime -= std::chrono::duration<double>(10);
+}
+
+void CApp::OnFFClick()
+{
+    LOG(INFO) << "OnFFClick";
+    m_decoder->Seek(10.0, 0);
+    m_playTime += std::chrono::duration<double>(10);
 }
 
 void CApp::OnUser(Uint8 type, int code, void *data1, void *data2)
@@ -246,6 +273,14 @@ void CApp::OnUser(Uint8 type, int code, void *data1, void *data2)
             DLOG(INFO) << "Button LClick:" << button->GetName();
             if(button->GetName() == "Play")
                 OnPlayClick();
+            if(button->GetName() == "Pause")
+                OnPauseClick();
+            if(button->GetName() == "Stop")
+                OnStopClick();
+            if(button->GetName() == "Rewind")
+                OnRewindClick();
+            if(button->GetName() == "FastForward")
+                OnFFClick();
             else if(button->GetName() == "Switch")
                 OnExit();
             break;

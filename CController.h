@@ -7,14 +7,17 @@
 #include "CSurface.h"
 #include "CEvent.h"
 #include "CButton.h"
+#include "CApp.h"
 
 #include <glog/logging.h>
 #include <gflags/gflags.h>
 
 //==============================================================================
+class CApp;
 class CController : public CEvent
 {
 private:
+    CApp* m_capp;
     SDL_Window *m_screen;
     SDL_Renderer *m_renderer;
 
@@ -25,15 +28,17 @@ private:
 public:
     CController();
 
+    CButton m_rewindButton;
     CButton m_playButton;
+    CButton m_pauseButton;
     CButton m_stopButton;
-    CButton m_play2Button;
-    CButton m_stop2Button;
+    CButton m_ffButton;
     CButton m_cogButton;
     CButton m_switchButton;
+    CButton m_posButton;
 
 public:
-    bool OnInit(SDL_Window *screen, SDL_Renderer *renderer);
+    bool OnInit(CApp* capp, SDL_Window *screen, SDL_Renderer *renderer);
     bool OnLoad();
     bool OnDraw();
     void OnEvent(SDL_Event *Event);

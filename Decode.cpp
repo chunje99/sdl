@@ -203,6 +203,7 @@ int CDecode::DecodeFrame(AVFrame* pFrameRGB, double now)
             if (packet == NULL)
             {
                 LOG(ERROR) << "Packet Empty";
+                usleep(1000*200);
                 break;
             }
             if (packet->stream_index == m_videoStream)
@@ -229,6 +230,7 @@ int CDecode::DecodeFrame(AVFrame* pFrameRGB, double now)
                     pts -= m_basePts;
                     pts *= av_q2d(pFormatCtx->streams[m_videoStream]->time_base);
                     pts = synchronize_video(pFrame, pts);
+                    m_curPts = pts;
                     double diff = pts-now;
                     if( diff > 0 )
                         usleep( diff * 1000000);
@@ -438,8 +440,9 @@ int CDecode::audio_decode_frame(uint8_t *audio_buf, int buf_size)
         pkt = GetAudioPacket();
         if(pkt == NULL)
         {
-            m_endAudio = true;
+            //m_endAudio = true;
             LOG(ERROR) << "GetAudioPacket NULL";
+            usleep(1000 * 200);
             return -1;
         }
         m_audio_pkt_data = pkt->data;
@@ -473,4 +476,42 @@ double CDecode::synchronize_video(AVFrame *src_frame, double pts)
     frame_delay += src_frame->repeat_pict * (frame_delay * 0.5);
     video_clock += frame_delay;
     return pts;
+}
+
+void CDecode::Seek(int64_t seek_target, int seek_flags)
+{
+
+    m_mutex.lock();
+    seek_target += m_curPts;
+    seek_target *= AV_TIME_BASE;
+    LOG(INFO) << "seek_target:" << seek_target;
+    seek_target = av_rescale_q(seek_target, AV_TIME_BASE_Q,
+                               pFormatCtx->streams[m_videoStream]->time_base);
+    LOG(INFO) << "seek_target:" << seek_target;
+    if (av_seek_frame(pFormatCtx, m_videoStream,
+                      seek_target, seek_flags) < 0)
+    {
+        LOG(ERROR) << "error while seeking";
+    }
+    else
+    {
+        /* handle packet queues... more later... */
+        ///flush buffer
+        AVPacket *packet = NULL;
+        ///flush video
+        while(m_packets.empty())
+        {
+            packet = m_packets.front();
+            m_packets.pop();
+            av_packet_free(&packet);
+        }
+        ///fulsh audio
+        while(m_audioPackets.empty())
+        {
+            packet = m_audioPackets.front();
+            m_audioPackets.pop();
+            av_packet_free(&packet);
+        }
+    }
+    m_mutex.unlock();
 }

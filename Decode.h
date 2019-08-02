@@ -40,6 +40,8 @@ public:
     AVCodecContext* GetAudioCtx() {return m_audioCodecCtx;};
     double synchronize_video(AVFrame *src_frame, double pts);
     void onCallback(Uint8 *stream, int len);
+    double GetDuraion(){return pFormatCtx->duration;};
+    void Seek(int64_t seek_target, int seek_flags);
 
 private:
     int AddPacket(AVPacket *packet);
@@ -77,6 +79,7 @@ private:
 	uint8_t converted_data[(192000 * 3) / 2];
     uint8_t* converted;
     double m_basePts;
+    double m_curPts;
     bool Running;
     CApp* m_capp;
     AVFrame *pFrame;

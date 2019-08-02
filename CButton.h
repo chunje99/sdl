@@ -23,6 +23,12 @@ private:
     std::string m_name;
     bool m_isMouseOver;
     std::function<void(void)> m_onLButtonClick;
+    bool m_isLDown;
+    bool m_movableX;
+    bool m_movableY;
+    bool m_movableW;
+    bool m_movableH;
+    bool m_isVisible;
 
 public:
     CButton();
@@ -32,12 +38,18 @@ public:
     void SetRect(SDL_Rect* rect);
     void OnEvent(SDL_Event *Event);
     std::string GetName(){return m_name;};
+    void SetMovableX(bool tf);
+    void SetMovableY(bool tf);
+    void SetMovableW(bool tf);
+    void SetMovableH(bool tf);
+    void SetVisible(bool tf);
 
 private:
     void OnMouseMove(int mX, int mY, int relX, int relY, bool Left, bool Right, bool Middle);
     void OnMouseOver();
     void OnMouseOut();
     void OnLButtonDown(int mX, int mY);
+    void OnLButtonUp(int mX, int mY);
 };
 
 //==============================================================================

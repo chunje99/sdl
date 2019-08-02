@@ -3,8 +3,18 @@
 CButton::CButton() : m_screen(NULL),
                      m_renderer(NULL),
                      m_texture(NULL),
-                     m_isMouseOver(false)
+                     m_isMouseOver(false),
+                     m_isLDown(false),
+                     m_movableX(false),
+                     m_movableY(false),
+                     m_movableW(false),
+                     m_movableH(false),
+                     m_isVisible(true)
 {
+    m_rect.x = 0;
+    m_rect.y = 0;
+    m_rect.w = 0;
+    m_rect.h = 0;
 }
 
 bool CButton::OnInit(SDL_Window* screen, SDL_Renderer* renderer, const char* name)
@@ -29,6 +39,8 @@ bool CButton::OnLoad(char* filePath)
 
 bool CButton::OnDraw()
 {
+    if(!m_isVisible)
+        return true;
     CSurface::OnDraw(m_renderer, m_texture,
                     m_rect.x,
                     m_rect.y, m_rect.w, m_rect.h);
@@ -37,14 +49,28 @@ bool CButton::OnDraw()
 
 void CButton::SetRect(SDL_Rect* rect)
 {
-    m_rect.x = rect->x;
-    m_rect.y = rect->y;
-    m_rect.w = rect->w;
-    m_rect.h = rect->h;
+    if(m_isLDown)
+        return;
+    bool first = false;
+    if (m_rect.x == 0 &&
+        m_rect.y == 0 &&
+        m_rect.w == 0 &&
+        m_rect.h == 0)
+        first = true;
+    if (first || m_movableX)
+        m_rect.x = rect->x;
+    if (first || m_movableY)
+        m_rect.y = rect->y;
+    if (first || m_movableW)
+        m_rect.w = rect->w;
+    if (first || m_movableH)
+        m_rect.h = rect->h;
 }
 
 void CButton::OnEvent(SDL_Event *Event)
 {
+    if(!m_isVisible)
+        return ;
     CEvent::OnEvent(Event);
 }
 
@@ -55,6 +81,10 @@ void CButton::OnMouseMove(int mX, int mY, int relX, int relY, bool Left, bool Ri
         OnMouseOver();
     else
         OnMouseOut();
+    if(m_isLDown && m_movableX)
+        m_rect.x = mX;
+    if(m_isLDown && m_movableY)
+        m_rect.y = mY;
 }
 
 void CButton::OnMouseOver()
@@ -96,6 +126,16 @@ void CButton::OnLButtonDown(int mX, int mY)
         mY >= m_rect.y && mY <= m_rect.y + m_rect.w)
     {
         DLOG(INFO) << "OnMouseClick:" << m_name;
+        m_isLDown = true;
+    }
+}
+
+void CButton::OnLButtonUp(int mX, int mY)
+{
+    if (mX >= m_rect.x && mX <= m_rect.x + m_rect.w &&
+        mY >= m_rect.y && mY <= m_rect.y + m_rect.w && m_isLDown)
+    {
+        DLOG(INFO) << "OnMouseClick:" << m_name;
         try
         {
             SDL_Event user_event;
@@ -112,4 +152,26 @@ void CButton::OnLButtonDown(int mX, int mY)
             LOG(ERROR) << "OnLButtonDown Event Undefined:" << m_name;
         }
     }
+    m_isLDown = false;
+}
+
+void CButton::SetMovableX(bool tf)
+{
+    m_movableX = tf;
+}
+void CButton::SetMovableY(bool tf)
+{
+    m_movableY = tf;
+}
+void CButton::SetMovableW(bool tf)
+{
+    m_movableW = tf;
+}
+void CButton::SetMovableH(bool tf)
+{
+    m_movableH = tf;
+}
+void CButton::SetVisible(bool tf)
+{
+    m_isVisible = tf;
 }
