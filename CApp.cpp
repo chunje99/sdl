@@ -48,11 +48,17 @@ bool CApp::OnInit()
         return false;
     }
 
+    //screen = SDL_CreateWindow("My Window",
+     //                         SDL_WINDOWPOS_UNDEFINED,
+      //                        SDL_WINDOWPOS_UNDEFINED,
+       //                       m_decoder->GetVideoCtx()->width/2,
+        //                      m_decoder->GetVideoCtx()->height/2,
+         //                     0);
     screen = SDL_CreateWindow("My Window",
                               SDL_WINDOWPOS_UNDEFINED,
                               SDL_WINDOWPOS_UNDEFINED,
-                              m_decoder->GetVideoCtx()->width/2,
-                              m_decoder->GetVideoCtx()->height/2,
+                              1280,
+                              720,
                               0);
 
     renderer = SDL_CreateRenderer(screen, -1, SDL_RENDERER_ACCELERATED);
@@ -67,8 +73,10 @@ bool CApp::OnInit()
         renderer,
         SDL_PIXELFORMAT_RGB24,
         SDL_TEXTUREACCESS_STREAMING,
-        m_decoder->GetVideoCtx()->width/2,
-        m_decoder->GetVideoCtx()->height/2);
+        1280,
+        720);
+        //m_decoder->GetVideoCtx()->width/2,
+        //m_decoder->GetVideoCtx()->height/2);
 
     pFrameRGB = av_frame_alloc();
     if (pFrameRGB == NULL)
@@ -141,7 +149,7 @@ int CApp::OnExecute()
 
         OnLoop();
         OnRender();
-        usleep(100);
+        //usleep(100);
     }
 
     OnCleanup();
@@ -160,8 +168,10 @@ void CApp::OnRender()
 {
     SDL_RenderClear(renderer);
     CSurface::OnDrawPlayer(renderer, videoTexture, 0, 0,
-                              m_decoder->GetVideoCtx()->width/2,
-                              m_decoder->GetVideoCtx()->height/2 );
+                            1280,
+                            720);
+                            // m_decoder->GetVideoCtx()->width/2,
+                            // m_decoder->GetVideoCtx()->height/2 );
     m_controller->OnDraw();
     SDL_RenderPresent(renderer);
 }
@@ -171,9 +181,11 @@ void CApp::OnLoop()
     {
         return;
     }
-    if (m_decoder->DecodeFrame(pFrameRGB) == 0)
+    //if (m_decoder->DecodeFrame(pFrameRGB) == 0)
+    AVFrame* frame;
+    if ((frame = m_decoder->GetFrame()) != NULL)
     {
-        SDL_UpdateTexture(videoTexture, NULL, pFrameRGB->data[0], pFrameRGB->linesize[0]);
+        SDL_UpdateTexture(videoTexture, NULL, frame->data[0], frame->linesize[0]);
     }
 }
 
@@ -289,7 +301,8 @@ void CApp::OnPositionClick(SDL_Rect rect)
 {
     LOG(INFO) << "OnPositionClick";
     //시간 계산
-    double posSec = (rect.x+(rect.w/2))* (m_decoder->GetDuraion()/1000000)/((m_decoder->GetVideoCtx()->width / 2) - 100) ;
+    //double posSec = (rect.x+(rect.w/2))* (m_decoder->GetDuraion()/1000000)/((m_decoder->GetVideoCtx()->width / 2) - 100) ;
+    double posSec = (rect.x+(rect.w/2))* (m_decoder->GetDuraion()/1000000)/((1280 / 2) - 100) ;
     LOG(INFO) << "Seek Time: " << posSec;
     posSec = posSec - m_decoder->get_audio_clock();
     LOG(INFO) << "Seek Time: " << posSec;

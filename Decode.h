@@ -12,6 +12,7 @@ extern "C"
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
 #include <libswresample/swresample.h>
+#include <libavutil/imgutils.h>
 }
 #include <queue>
 #include <mutex>
@@ -34,7 +35,8 @@ public:
     ~CDecode();
     int Init(CApp* capp, const char *filePath);
     int ReadFrame();
-    int DecodeFrame(AVFrame *pFrameRGB);
+    int DecodeFrame();
+    AVFrame* GetFrame();
 
     AVCodecContext* GetVideoCtx() {return m_pCodecCtx;};
     AVCodecContext* GetAudioCtx() {return m_audioCodecCtx;};
@@ -66,6 +68,7 @@ private:
 
     std::queue<AVPacket *> m_packets;
     std::queue<AVPacket *> m_audioPackets;
+    std::queue<AVFrame *> m_decodedFrames;
     std::mutex m_mutex;
     bool m_endFrame;
     bool m_endAudio;

@@ -86,6 +86,7 @@ int CDecode::Init(CApp *capp, const char *filePath)
     AVCodec *pCodec = NULL;
     pCodec = avcodec_find_decoder(pFormatCtx->streams[m_videoStream]->codecpar->codec_id);
     m_pCodecCtx = avcodec_alloc_context3(pCodec);
+    m_pCodecCtx->thread_count = 6;
     ret = avcodec_parameters_to_context(m_pCodecCtx, pFormatCtx->streams[m_videoStream]->codecpar);
     if (!pCodec)
     {
@@ -101,8 +102,10 @@ int CDecode::Init(CApp *capp, const char *filePath)
     sws_ctx = sws_getContext(m_pCodecCtx->width,
                              m_pCodecCtx->height,
                              m_pCodecCtx->pix_fmt,
-                             m_pCodecCtx->width / 2,
-                             m_pCodecCtx->height / 2,
+                             1280,
+                             720,
+                             //m_pCodecCtx->width / 2,
+                             //m_pCodecCtx->height / 2,
                              AV_PIX_FMT_RGB24,
                              SWS_BILINEAR,
                              NULL,
@@ -152,6 +155,7 @@ int CDecode::Init(CApp *capp, const char *filePath)
     //DecodeFrame();
 
     m_thread[0] = new std::thread(&CDecode::ReadFrame, this);
+    m_thread[1] = new std::thread(&CDecode::DecodeFrame, this);
     //std::thread t1(&CDecode::ReadFrame, this);
     //std::thread t2(&CDecode::DecodeFrame, this);
     //t1.join();
@@ -190,11 +194,52 @@ int CDecode::ReadFrame()
     return 0;
 }
 
-int CDecode::DecodeFrame(AVFrame *pFrameRGB)
+AVFrame* CDecode::GetFrame()
+{
+    AVFrame* frame = NULL;
+    if (!m_decodedFrames.empty())
+    {
+        m_mutex.lock();
+        frame = m_decodedFrames.front();
+        m_decodedFrames.pop();
+        m_mutex.unlock();
+    }
+    return frame;
+}
+
+int CDecode::DecodeFrame()
 {
     AVPacket *packet;
     // Allocate an AVFrame structure
     int ret;
+    /*
+    AVFrame *pFrameRGB = av_frame_alloc();
+    if (pFrameRGB == NULL)
+        return -1;
+    uint8_t *buffer = NULL;
+    int numBytes;
+    // Determine required buffer size and allocate buffer
+    //numBytes = avpicture_get_size(AV_PIX_FMT_RGB24, m_decoder->GetVideoCtx()->width,
+    //                              m_decoder->GetVideoCtx()->height);
+    numBytes = av_image_get_buffer_size(AV_PIX_FMT_RGB24,
+                                        m_pCodecCtx->width,
+                                        m_pCodecCtx->height,
+                                        8);
+    buffer = (uint8_t *)av_malloc(numBytes * sizeof(uint8_t));
+    //avpicture_fill((AVPicture *)pFrameRGB, buffer, AV_PIX_FMT_RGB24,
+    //               m_decoder->GetVideoCtx()->width, m_decoder->GetVideoCtx()->height);
+    av_image_fill_arrays(&pFrameRGB->data[0], &pFrameRGB->linesize[0], buffer, AV_PIX_FMT_RGB24,
+                         m_pCodecCtx->width,
+                         m_pCodecCtx->height,
+                         1);
+                         */
+    uint8_t *buffer = NULL;
+    int numBytes;
+    numBytes = av_image_get_buffer_size(AV_PIX_FMT_RGB24,
+                                        m_pCodecCtx->width,
+                                        m_pCodecCtx->height,
+                                        8);
+    buffer = (uint8_t *)av_malloc(numBytes * sizeof(uint8_t));
     while (m_capp->Running)
     {
         while (m_capp->Running)
@@ -203,7 +248,8 @@ int CDecode::DecodeFrame(AVFrame *pFrameRGB)
             if (packet == NULL)
             {
                 LOG(ERROR) << "Packet Empty";
-                break;
+                usleep(1000);
+                continue;
             }
             if (packet->stream_index == m_videoStream)
             {
@@ -243,6 +289,13 @@ int CDecode::DecodeFrame(AVFrame *pFrameRGB)
                             usleep(diff * 1000000);
                         }
                     }
+                    AVFrame *pFrameRGB = av_frame_alloc();
+                    if (pFrameRGB == NULL)
+                        return -1;
+                    av_image_fill_arrays(&pFrameRGB->data[0], &pFrameRGB->linesize[0], buffer, AV_PIX_FMT_RGB24,
+                                         m_pCodecCtx->width,
+                                         m_pCodecCtx->height,
+                                         1);
                     sws_scale(sws_ctx, (uint8_t const *const *)pFrame->data,
                               pFrame->linesize, 0, m_pCodecCtx->height,
                               pFrameRGB->data, pFrameRGB->linesize);
@@ -251,8 +304,11 @@ int CDecode::DecodeFrame(AVFrame *pFrameRGB)
                     pFrameRGB->pts = pFrame->pts;
                     pFrameRGB->pkt_pts = pFrame->pkt_pts;
                     //av_packet_unref(packet);
+                    m_mutex.lock();
+                    m_decodedFrames.push(pFrameRGB);
+                    m_mutex.unlock();
                     av_packet_free(&packet);
-                    return 0;
+                    break;
                 }
                 //av_packet_unref(packet);
                 av_packet_free(&packet);
@@ -276,7 +332,7 @@ int CDecode::AddPacket(AVPacket *packet)
     if (m_packets.size() > 50)
     {
         //LOG(INFO) << "video packet size:" << m_packets.size();
-        usleep(1000 * 20);
+        usleep(1000* 20);
     }
     return 0;
 }
@@ -302,7 +358,7 @@ int CDecode::AddAudioPacket(AVPacket *packet)
     if (m_audioPackets.size() > 50)
     {
         //LOG(INFO) << "audio packets :" << m_audioPackets.size();
-        usleep(1000 * 20);
+        usleep(1000* 20);
     }
     return 0;
 }
@@ -487,7 +543,8 @@ double CDecode::synchronize_video(AVFrame *src_frame, double pts)
     /* if we are repeating a frame, adjust clock accordingly */
     frame_delay += src_frame->repeat_pict * (frame_delay * 0.5);
     m_video_clock += frame_delay;
-    //DLOG(INFO) << "video_clock:" << m_video_clock << " pts: " << pts << " audio_clock:" << get_audio_clock();
+    DLOG(INFO) << "video_clock:" << m_video_clock << " pts: " << pts << " audio_clock:" << get_audio_clock();
+    DLOG(INFO) << "videoPacket:" << m_packets.size() << " audioPacket: " << m_audioPackets.size();
     return pts;
 }
 
