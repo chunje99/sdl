@@ -34,7 +34,7 @@ public:
     ~CDecode();
     int Init(CApp* capp, const char *filePath);
     int ReadFrame();
-    int DecodeFrame(AVFrame *pFrameRGB, double now);
+    int DecodeFrame(AVFrame *pFrameRGB);
 
     AVCodecContext* GetVideoCtx() {return m_pCodecCtx;};
     AVCodecContext* GetAudioCtx() {return m_audioCodecCtx;};
@@ -42,6 +42,9 @@ public:
     void onCallback(Uint8 *stream, int len);
     double GetDuraion(){return pFormatCtx->duration;};
     void Seek(int64_t seek_target, int seek_flags);
+    double get_audio_clock();
+    int GetVolume(){return m_volume;};
+    void SetVolume(int volume);
 
 private:
     int AddPacket(AVPacket *packet);
@@ -68,7 +71,8 @@ private:
     bool m_endAudio;
     std::thread* m_thread[2];
     SDL_Surface *m_screen;
-    double          video_clock;
+    double          m_video_clock;
+    double          m_audio_clock;
 
     uint8_t m_audio_buf[(AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2];
     unsigned int m_audio_buf_size;
@@ -83,6 +87,7 @@ private:
     bool Running;
     CApp* m_capp;
     AVFrame *pFrame;
+    int m_volume;
 };
 
 #endif

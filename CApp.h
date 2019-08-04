@@ -36,8 +36,6 @@ private:
     CDecode* m_decoder;
     AVFrame* pFrameRGB;
     int m_idx;
-    std::chrono::time_point<std::chrono::system_clock> m_now;
-    std::chrono::duration<double> m_playTime;
     double m_curPos;
     SDL_AudioSpec wantedSpec;
     SDL_AudioSpec audioSpec;
@@ -64,6 +62,8 @@ public:
 
     void OnExit();
 
+    void OnKeyUp(SDL_Keycode sym, Uint16 mod, SDL_Scancode scancode);
+
     void OnUser(Uint8 type, int code, void *data1, void *data2);
 
     void OnPlayClick();
@@ -74,9 +74,15 @@ public:
 
     void OnRewindClick();
 
+    void OnPositionClick(SDL_Rect rect);
+
     void OnFFClick();
 
-    double GetCurPos(){return m_curPos;};
+    void OnVolumeUp();
+
+    void OnVolumeDown();
+
+    double GetCurPos();
 
 public:
     void OnAudioCallback(Uint8 *stream, int len);

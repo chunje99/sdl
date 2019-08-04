@@ -84,8 +84,8 @@ bool CSurface::OnDrawPlayer(SDL_Renderer *renderer, SDL_Texture* tex, int X, int
     //SDL_RenderClear(renderer);
     //Draw the texture
     SDL_RenderCopy(renderer, tex, NULL, &DestR);
-	DestR.x = X+W;
-    SDL_RenderCopy(renderer, tex, NULL, &DestR);
+	//DestR.x = X+W;
+    //SDL_RenderCopy(renderer, tex, NULL, &DestR);
     //SDL_RenderCopy(renderer, tex, NULL, NULL);
     //Update the screen
     //SDL_RenderPresent(renderer);

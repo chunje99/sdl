@@ -36,6 +36,7 @@ public:
     bool OnLoad(char* filePath);
     bool OnDraw();
     void SetRect(SDL_Rect* rect);
+    SDL_Rect GetRect(){return m_rect;};
     void OnEvent(SDL_Event *Event);
     std::string GetName(){return m_name;};
     void SetMovableX(bool tf);

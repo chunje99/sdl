@@ -51,8 +51,8 @@ bool CApp::OnInit()
     screen = SDL_CreateWindow("My Window",
                               SDL_WINDOWPOS_UNDEFINED,
                               SDL_WINDOWPOS_UNDEFINED,
-                              m_decoder->GetVideoCtx()->width,
-                              m_decoder->GetVideoCtx()->height,
+                              m_decoder->GetVideoCtx()->width/2,
+                              m_decoder->GetVideoCtx()->height/2,
                               0);
 
     renderer = SDL_CreateRenderer(screen, -1, SDL_RENDERER_ACCELERATED);
@@ -67,8 +67,8 @@ bool CApp::OnInit()
         renderer,
         SDL_PIXELFORMAT_RGB24,
         SDL_TEXTUREACCESS_STREAMING,
-        m_decoder->GetVideoCtx()->width,
-        m_decoder->GetVideoCtx()->height);
+        m_decoder->GetVideoCtx()->width/2,
+        m_decoder->GetVideoCtx()->height/2);
 
     pFrameRGB = av_frame_alloc();
     if (pFrameRGB == NULL)
@@ -132,7 +132,6 @@ int CApp::OnExecute()
         return -1;
     }
 
-    m_now = std::chrono::system_clock::now();
     while (Running)
     {
         while (SDL_PollEvent(&m_event))
@@ -168,20 +167,14 @@ void CApp::OnRender()
 }
 void CApp::OnLoop()
 {
-    auto now = std::chrono::system_clock::now();
-    std::chrono::duration<double> diff = now-m_now;
-    m_now = now;
     if(!m_play)
     {
         return;
     }
-    m_playTime += diff;
-    //double diff2 = now-m_now;
-    if (m_decoder->DecodeFrame(pFrameRGB, m_playTime.count()) == 0)
+    if (m_decoder->DecodeFrame(pFrameRGB) == 0)
     {
         SDL_UpdateTexture(videoTexture, NULL, pFrameRGB->data[0], pFrameRGB->linesize[0]);
     }
-    m_curPos = m_playTime.count() * 100 / (m_decoder->GetDuraion()/1000000);
 }
 
 void CApp::OnCleanup()
@@ -223,6 +216,33 @@ void CApp::SetFileName(const char *fileName)
     m_fileName = fileName;
 }
 
+void CApp::OnKeyUp(SDL_Keycode sym, Uint16 mod, SDL_Scancode scancode)
+{
+    if( sym == SDLK_UP )
+    {
+        OnVolumeUp();
+    }
+    else if( sym == SDLK_DOWN )
+    {
+        OnVolumeDown();
+    }
+    else if( sym == SDLK_LEFT)
+    {
+        OnRewindClick();
+    }
+    else if( sym == SDLK_RIGHT)
+    {
+        OnFFClick();
+    }
+    else if( sym == SDLK_SPACE)
+    {
+        if(m_play)
+            OnPauseClick();
+        else
+            OnPlayClick();
+    }
+}
+
 void CApp::OnPlayClick()
 {
     LOG(INFO) << "OnPlayClick";
@@ -247,14 +267,38 @@ void CApp::OnRewindClick()
 {
     LOG(INFO) << "OnRewindClick";
     m_decoder->Seek(-10.0, 0);
-    m_playTime -= std::chrono::duration<double>(10);
 }
 
 void CApp::OnFFClick()
 {
     LOG(INFO) << "OnFFClick";
     m_decoder->Seek(10.0, 0);
-    m_playTime += std::chrono::duration<double>(10);
+}
+void CApp::OnVolumeUp()
+{
+    LOG(INFO) << "OnVolumeUp";
+    m_decoder->SetVolume(m_decoder->GetVolume() - 10);
+}
+void CApp::OnVolumeDown()
+{
+    LOG(INFO) << "OnVolumeDown";
+    m_decoder->SetVolume(m_decoder->GetVolume() + 10);
+}
+
+void CApp::OnPositionClick(SDL_Rect rect)
+{
+    LOG(INFO) << "OnPositionClick";
+    //시간 계산
+    double posSec = (rect.x+(rect.w/2))* (m_decoder->GetDuraion()/1000000)/((m_decoder->GetVideoCtx()->width / 2) - 100) ;
+    LOG(INFO) << "Seek Time: " << posSec;
+    posSec = posSec - m_decoder->get_audio_clock();
+    LOG(INFO) << "Seek Time: " << posSec;
+    int flags = 0;
+    if(posSec < 0 )
+    {
+        flags = AVSEEK_FLAG_BACKWARD;
+    }
+    m_decoder->Seek(posSec, flags);
 }
 
 void CApp::OnUser(Uint8 type, int code, void *data1, void *data2)
@@ -281,6 +325,8 @@ void CApp::OnUser(Uint8 type, int code, void *data1, void *data2)
                 OnRewindClick();
             if(button->GetName() == "FastForward")
                 OnFFClick();
+            if(button->GetName() == "Position")
+                OnPositionClick(button->GetRect());
             else if(button->GetName() == "Switch")
                 OnExit();
             break;
@@ -294,6 +340,13 @@ void CApp::OnUser(Uint8 type, int code, void *data1, void *data2)
         break;
     }
     }
+}
+
+double CApp::GetCurPos()
+{
+    if(m_decoder->GetDuraion() <= 0)
+        return 0L;
+    return  m_decoder->get_audio_clock()*1000000 / m_decoder->GetDuraion();
 }
 
 DEFINE_string(file, "", "video file name");

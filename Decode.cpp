@@ -23,17 +23,18 @@ CDecode::CDecode() : pFormatCtx(NULL)
     m_basePts = -1;
     Running = true;
     pFrame = av_frame_alloc();
+    m_volume = SDL_MIX_MAXVOLUME;
 }
 
 CDecode::~CDecode()
 {
-    if(m_thread[0])
+    if (m_thread[0])
         m_thread[0]->join();
-    if(m_thread[1])
+    if (m_thread[1])
         m_thread[1]->join();
 }
 
-int CDecode::Init(CApp* capp, const char *filePath)
+int CDecode::Init(CApp *capp, const char *filePath)
 {
     m_capp = capp;
     // Open video file
@@ -100,14 +101,13 @@ int CDecode::Init(CApp* capp, const char *filePath)
     sws_ctx = sws_getContext(m_pCodecCtx->width,
                              m_pCodecCtx->height,
                              m_pCodecCtx->pix_fmt,
-                             m_pCodecCtx->width,
-                             m_pCodecCtx->height,
+                             m_pCodecCtx->width / 2,
+                             m_pCodecCtx->height / 2,
                              AV_PIX_FMT_RGB24,
                              SWS_BILINEAR,
                              NULL,
                              NULL,
                              NULL);
-
 
     ///audioCodecCtx
     AVCodec *audioCodec = NULL;
@@ -139,13 +139,13 @@ int CDecode::Init(CApp* capp, const char *filePath)
             return -1;
         }
         av_opt_set_channel_layout(swr_ctx, "in_channel_layout", m_audioCodecCtx->channel_layout, 0);
-		av_opt_set_channel_layout(swr_ctx, "out_channel_layout", m_audioCodecCtx->channel_layout, 0);
-		av_opt_set_int(swr_ctx, "in_sample_rate", m_audioCodecCtx->sample_rate, 0);
-		av_opt_set_int(swr_ctx, "out_sample_rate", m_audioCodecCtx->sample_rate, 0);
-		av_opt_set_sample_fmt(swr_ctx, "in_sample_fmt", m_audioCodecCtx->sample_fmt, 0);
-		av_opt_set_sample_fmt(swr_ctx, "out_sample_fmt", AV_SAMPLE_FMT_FLT, 0);
-		swr_init(swr_ctx);
-	}
+        av_opt_set_channel_layout(swr_ctx, "out_channel_layout", m_audioCodecCtx->channel_layout, 0);
+        av_opt_set_int(swr_ctx, "in_sample_rate", m_audioCodecCtx->sample_rate, 0);
+        av_opt_set_int(swr_ctx, "out_sample_rate", m_audioCodecCtx->sample_rate, 0);
+        av_opt_set_sample_fmt(swr_ctx, "in_sample_fmt", m_audioCodecCtx->sample_fmt, 0);
+        av_opt_set_sample_fmt(swr_ctx, "out_sample_fmt", AV_SAMPLE_FMT_FLT, 0);
+        swr_init(swr_ctx);
+    }
 
     //ReadFrame();
     //PlayAudio();
@@ -190,7 +190,7 @@ int CDecode::ReadFrame()
     return 0;
 }
 
-int CDecode::DecodeFrame(AVFrame* pFrameRGB, double now)
+int CDecode::DecodeFrame(AVFrame *pFrameRGB)
 {
     AVPacket *packet;
     // Allocate an AVFrame structure
@@ -203,7 +203,6 @@ int CDecode::DecodeFrame(AVFrame* pFrameRGB, double now)
             if (packet == NULL)
             {
                 LOG(ERROR) << "Packet Empty";
-                usleep(1000*200);
                 break;
             }
             if (packet->stream_index == m_videoStream)
@@ -230,10 +229,20 @@ int CDecode::DecodeFrame(AVFrame* pFrameRGB, double now)
                     pts -= m_basePts;
                     pts *= av_q2d(pFormatCtx->streams[m_videoStream]->time_base);
                     pts = synchronize_video(pFrame, pts);
+                    double aPts = get_audio_clock();
                     m_curPts = pts;
-                    double diff = pts-now;
-                    if( diff > 0 )
-                        usleep( diff * 1000000);
+                    double diff = pts - aPts;
+                    if (diff > 0)
+                    {
+                        if (diff > 100.0)
+                        {
+                            LOG(INFO) << "usleep" << diff;
+                        }
+                        else
+                        {
+                            usleep(diff * 1000000);
+                        }
+                    }
                     sws_scale(sws_ctx, (uint8_t const *const *)pFrame->data,
                               pFrame->linesize, 0, m_pCodecCtx->height,
                               pFrameRGB->data, pFrameRGB->linesize);
@@ -264,10 +273,10 @@ int CDecode::AddPacket(AVPacket *packet)
     m_mutex.lock();
     m_packets.push(packet);
     m_mutex.unlock();
-    if(m_packets.size() > 10)
+    if (m_packets.size() > 50)
     {
-        LOG(INFO) << "video packet size:" << m_packets.size();
-        usleep(1000*200);
+        //LOG(INFO) << "video packet size:" << m_packets.size();
+        usleep(1000 * 20);
     }
     return 0;
 }
@@ -290,10 +299,10 @@ int CDecode::AddAudioPacket(AVPacket *packet)
     m_mutex.lock();
     m_audioPackets.push(packet);
     m_mutex.unlock();
-    if(m_audioPackets.size() > 10)
+    if (m_audioPackets.size() > 50)
     {
-        LOG(INFO) << "audio packets :" << m_audioPackets.size();
-        usleep(1000*200);
+        //LOG(INFO) << "audio packets :" << m_audioPackets.size();
+        usleep(1000 * 20);
     }
     return 0;
 }
@@ -362,7 +371,9 @@ void CDecode::onCallback(Uint8 *stream, int len)
         len1 = m_audio_buf_size - m_audio_buf_index;
         if (len1 > len)
             len1 = len;
-        memcpy(stream, (uint8_t *)m_audio_buf + m_audio_buf_index, len1);
+        //memcpy(stream, (uint8_t *)m_audio_buf + m_audio_buf_index, len1);
+        SDL_memset(stream, 0, len1);
+        SDL_MixAudio(stream, (uint8_t *)m_audio_buf + m_audio_buf_index, len1, m_volume);// mix from one buffer into another
         len -= len1;
         stream += len1;
         m_audio_buf_index += len1;
@@ -376,17 +387,21 @@ void CDecode::audio_callback(void *userdata, Uint8 *stream, int len)
 
 int CDecode::audio_decode_frame(uint8_t *audio_buf, int buf_size)
 {
-    static AVPacket* pkt;
+    static AVPacket *pkt;
     //static AVFrame frame;
 
     int len1, data_size = 0, len2;
 
     AVFrame *aFrame = av_frame_alloc();
-    for (;m_capp->Running;)
+    for (; m_capp->Running;)
     {
         while (m_audio_pkt_size > 0 && m_capp->Running)
         {
             int got_frame = 0;
+            if (pkt->pts != AV_NOPTS_VALUE)
+            {
+                m_audio_clock = av_q2d(pFormatCtx->streams[m_audioStream]->time_base) * pkt->pts;
+            }
             len1 = avcodec_decode_audio4(m_audioCodecCtx, aFrame, &got_frame, pkt);
             if (len1 < 0)
             {
@@ -403,13 +418,13 @@ int CDecode::audio_decode_frame(uint8_t *audio_buf, int buf_size)
             if (got_frame)
             {
                 data_size = av_samples_get_buffer_size(NULL, m_audioCodecCtx->channels, aFrame->nb_samples,
-                                                      m_audioCodecCtx->sample_fmt, 1);
+                                                       m_audioCodecCtx->sample_fmt, 1);
                 int outSize = av_samples_get_buffer_size(NULL, m_audioCodecCtx->channels, aFrame->nb_samples,
                                                          AV_SAMPLE_FMT_FLT, 1);
-                len2 = swr_convert(swr_ctx, &converted, aFrame->nb_samples, 
-                        (const uint8_t **)&aFrame->data[0], aFrame->nb_samples);
-				memcpy(audio_buf, converted_data, outSize);
-				data_size = outSize;
+                len2 = swr_convert(swr_ctx, &converted, aFrame->nb_samples,
+                                   (const uint8_t **)&aFrame->data[0], aFrame->nb_samples);
+                memcpy(audio_buf, converted_data, outSize);
+                data_size = outSize;
             }
             if (data_size <= 0)
             {
@@ -420,7 +435,6 @@ int CDecode::audio_decode_frame(uint8_t *audio_buf, int buf_size)
             /* We have data, return it and come back for more later */
             //av_frame_unref(aFrame);
             av_frame_free(&aFrame);
-            //usleep(1000 * 100);
             return data_size;
         }
         //av_free_packet(pkt);
@@ -438,11 +452,10 @@ int CDecode::audio_decode_frame(uint8_t *audio_buf, int buf_size)
 */
 
         pkt = GetAudioPacket();
-        if(pkt == NULL)
+        if (pkt == NULL)
         {
             //m_endAudio = true;
             LOG(ERROR) << "GetAudioPacket NULL";
-            usleep(1000 * 200);
             return -1;
         }
         m_audio_pkt_data = pkt->data;
@@ -454,7 +467,6 @@ int CDecode::audio_decode_frame(uint8_t *audio_buf, int buf_size)
     return 0;
 }
 
-
 double CDecode::synchronize_video(AVFrame *src_frame, double pts)
 {
 
@@ -463,25 +475,25 @@ double CDecode::synchronize_video(AVFrame *src_frame, double pts)
     if (pts != 0)
     {
         /* if we have pts, set video clock to it */
-        video_clock = pts;
+        m_video_clock = pts;
     }
     else
     {
         /* if we aren't given a pts, set it to the clock */
-        pts = video_clock;
+        pts = m_video_clock;
     }
     /* update the video clock */
     frame_delay = av_q2d(pFormatCtx->streams[m_videoStream]->time_base);
     /* if we are repeating a frame, adjust clock accordingly */
     frame_delay += src_frame->repeat_pict * (frame_delay * 0.5);
-    video_clock += frame_delay;
+    m_video_clock += frame_delay;
+    //DLOG(INFO) << "video_clock:" << m_video_clock << " pts: " << pts << " audio_clock:" << get_audio_clock();
     return pts;
 }
 
 void CDecode::Seek(int64_t seek_target, int seek_flags)
 {
 
-    m_mutex.lock();
     seek_target += m_curPts;
     seek_target *= AV_TIME_BASE;
     LOG(INFO) << "seek_target:" << seek_target;
@@ -497,21 +509,47 @@ void CDecode::Seek(int64_t seek_target, int seek_flags)
     {
         /* handle packet queues... more later... */
         ///flush buffer
+        m_mutex.lock();
         AVPacket *packet = NULL;
         ///flush video
-        while(m_packets.empty())
+        while (!m_packets.empty())
         {
             packet = m_packets.front();
             m_packets.pop();
             av_packet_free(&packet);
         }
         ///fulsh audio
-        while(m_audioPackets.empty())
+        while (!m_audioPackets.empty())
         {
             packet = m_audioPackets.front();
             m_audioPackets.pop();
             av_packet_free(&packet);
         }
+        m_mutex.unlock();
     }
-    m_mutex.unlock();
+}
+
+double CDecode::get_audio_clock()
+{
+  double pts;
+  int hw_buf_size, bytes_per_sec, n;
+  /* maintained in the audio thread */
+  pts = m_audio_clock;
+  hw_buf_size = m_audio_buf_size - m_audio_buf_index;
+  bytes_per_sec = 0;
+  n = m_audioCodecCtx->channels * 2;
+  if(m_audioStream) {
+    bytes_per_sec = m_audioCodecCtx->sample_rate * n;
+  }
+  if(bytes_per_sec) {
+    pts -= (double)hw_buf_size / bytes_per_sec;
+  }
+  return pts;
+}
+
+void CDecode::SetVolume(int volume)
+{
+    if( volume < 0 || volume > SDL_MIX_MAXVOLUME)
+        return ;
+    m_volume = volume;
 }

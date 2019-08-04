@@ -71,9 +71,9 @@ bool CController::OnInit(CApp* capp, SDL_Window *screen, SDL_Renderer *renderer)
         return false;
     }
     m_switchButton.SetRect(&tRect);
-    if(!m_posButton.OnInit(m_screen, m_renderer, "Possion"))
+    if(!m_posButton.OnInit(m_screen, m_renderer, "Position"))
     {
-        LOG(ERROR) << "Button Error Possion";
+        LOG(ERROR) << "Button Error Position";
         return false;
     }
     tRect.x = 0;
@@ -119,7 +119,7 @@ bool CController::OnDraw()
     SDL_Rect tRect;
     int pngSize = 100;
     if( m_capp->GetCurPos() > 0 )
-        tRect.x = (m_windowW-pngSize) * m_capp->GetCurPos() / 100;
+        tRect.x = (m_windowW-pngSize) * m_capp->GetCurPos() - pngSize/2;
     tRect.y = m_windowH - pngSize*2;
     tRect.w = pngSize;
     tRect.h = pngSize;

@@ -82,7 +82,7 @@ void CButton::OnMouseMove(int mX, int mY, int relX, int relY, bool Left, bool Ri
     else
         OnMouseOut();
     if(m_isLDown && m_movableX)
-        m_rect.x = mX;
+        m_rect.x = mX - m_rect.w/2;
     if(m_isLDown && m_movableY)
         m_rect.y = mY;
 }
