@@ -11,11 +11,10 @@ bool CController::OnInit(CApp* capp, SDL_Window *screen, SDL_Renderer *renderer)
     m_renderer = renderer;
     SDL_GetWindowSize(m_screen, &m_windowW, &m_windowH);
     SDL_Rect tRect;
-    int pngSize = 100;
     tRect.x = 0;
-    tRect.y = m_windowH - pngSize;
-    tRect.w = pngSize;
-    tRect.h = pngSize;
+    tRect.y = m_windowH - ICON_W;
+    tRect.w = ICON_W;
+    tRect.h = ICON_W;
 
     if(!m_rewindButton.OnInit(m_screen, m_renderer, "Rewind"))
     {
@@ -24,7 +23,7 @@ bool CController::OnInit(CApp* capp, SDL_Window *screen, SDL_Renderer *renderer)
     }
     m_rewindButton.SetRect(&tRect);
 
-    tRect.x += pngSize;
+    tRect.x += ICON_W;
     if(!m_playButton.OnInit(m_screen, m_renderer, "Play"))
     {
         LOG(ERROR) << "Button Error Play";
@@ -40,7 +39,7 @@ bool CController::OnInit(CApp* capp, SDL_Window *screen, SDL_Renderer *renderer)
     }
     m_pauseButton.SetRect(&tRect);
 
-    tRect.x += pngSize;
+    tRect.x += ICON_W;
     if(!m_ffButton.OnInit(m_screen, m_renderer, "FastForward"))
     {
         LOG(ERROR) << "Button Error FastForward";
@@ -48,7 +47,7 @@ bool CController::OnInit(CApp* capp, SDL_Window *screen, SDL_Renderer *renderer)
     }
     m_ffButton.SetRect(&tRect);
 
-    tRect.x += pngSize;
+    tRect.x += ICON_W;
     if(!m_stopButton.OnInit(m_screen, m_renderer, "Stop"))
     {
         LOG(ERROR) << "Button Error Stop";
@@ -56,7 +55,7 @@ bool CController::OnInit(CApp* capp, SDL_Window *screen, SDL_Renderer *renderer)
     }
     m_stopButton.SetRect(&tRect);
 
-    tRect.x += pngSize;
+    tRect.x += ICON_W;
     if(!m_cogButton.OnInit(m_screen, m_renderer, "Cog"))
     {
         LOG(ERROR) << "Button Error Cog";
@@ -64,7 +63,7 @@ bool CController::OnInit(CApp* capp, SDL_Window *screen, SDL_Renderer *renderer)
     }
     m_cogButton.SetRect(&tRect);
     
-    tRect.x += pngSize;
+    tRect.x += ICON_W;
     if(!m_switchButton.OnInit(m_screen, m_renderer, "Switch"))
     {
         LOG(ERROR) << "Button Error Switch";
@@ -77,9 +76,9 @@ bool CController::OnInit(CApp* capp, SDL_Window *screen, SDL_Renderer *renderer)
         return false;
     }
     tRect.x = 0;
-    tRect.y = m_windowH - pngSize*2;
-    tRect.w = pngSize;
-    tRect.h = pngSize;
+    tRect.y = m_windowH - ICON_W*2;
+    tRect.w = ICON_W;
+    tRect.h = ICON_W;
     m_posButton.SetRect(&tRect);
     m_posButton.SetMovableX(true);
 
@@ -117,12 +116,11 @@ bool CController::OnDraw()
     m_cogButton.OnDraw();
     m_switchButton.OnDraw();
     SDL_Rect tRect;
-    int pngSize = 100;
     if( m_capp->GetCurPos() > 0 )
-        tRect.x = (m_windowW-pngSize) * m_capp->GetCurPos() - pngSize/2;
-    tRect.y = m_windowH - pngSize*2;
-    tRect.w = pngSize;
-    tRect.h = pngSize;
+        tRect.x = (m_windowW-ICON_W) * m_capp->GetCurPos() - ICON_W/2;
+    tRect.y = m_windowH - ICON_W*2;
+    tRect.w = ICON_W;
+    tRect.h = ICON_W;
     m_posButton.SetRect(&tRect);
     m_posButton.OnDraw();
 

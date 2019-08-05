@@ -74,8 +74,8 @@ esac
 PKG_CONFIG
 # Checks for library functions.
 PKG_CHECK_MODULES([SDL], [sdl])
-PKG_CHECK_MODULES([SDL2], [sdl2, sdl2_image], [ ] ,[ 
-   PKG_CHECK_MODULES([SDL2], [sdl2, SDL2_image])
+PKG_CHECK_MODULES([SDL2], [sdl2, sdl2_image, sdl2_ttf], [ ] ,[ 
+   PKG_CHECK_MODULES([SDL2], [sdl2, SDL2_image, SDL2_ttf])
 ])
 PKG_CHECK_MODULES([FFMPEG], [libavcodec libavformat libavutil libswscale libswresample libavdevice])
 PKG_CHECK_MODULES([GLOG], [libglog])

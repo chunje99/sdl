@@ -6,6 +6,7 @@ CApp_SOURCES += CEvent.cpp
 CApp_SOURCES += Decode.cpp
 CApp_SOURCES += CController.cpp
 CApp_SOURCES += CButton.cpp
+CApp_SOURCES += CText.cpp
 
 CApp_LDADD = -lpthread 
 CApp_LDADD += $(SDL2_LIBS)

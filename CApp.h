@@ -6,13 +6,20 @@
 
 #include <iostream>
 #include <SDL.h>
+#include <SDL_ttf.h>
 
 #include "CSurface.h"
 #include "CEvent.h"
 #include "Decode.h"
+#include "CText.h"
 #include "CController.h"
 #include <glog/logging.h>
 #include <gflags/gflags.h>
+
+#define WINDOW_W 1280
+#define WINDOW_H 720
+#define ICON_W 100
+#define ICON_W 100
 
 //==============================================================================
 class CDecode;
@@ -30,6 +37,7 @@ private:
     SDL_Texture *tex;
     SDL_Texture *videoTexture;
 
+    CText* m_ctext;
     CController* m_controller;
     int X;
     int Y;

@@ -20,7 +20,7 @@ CDecode::CDecode() : pFormatCtx(NULL)
     converted = &converted_data[0];
     m_thread[0] = NULL;
     m_thread[1] = NULL;
-    m_basePts = -1;
+    m_basePts = 0;
     Running = true;
     pFrame = av_frame_alloc();
     m_volume = SDL_MIX_MAXVOLUME;
@@ -59,6 +59,8 @@ int CDecode::Init(CApp *capp, const char *filePath)
     }
     DLOG(INFO) << "av duration : " << pFormatCtx->duration;
     DLOG(INFO) << "av nb_streams : " << pFormatCtx->nb_streams;
+    DLOG(INFO) << "av start : " << pFormatCtx->start_time;
+    m_basePts = pFormatCtx->start_time;
 
     int i;
     int ret = 0;
@@ -102,8 +104,8 @@ int CDecode::Init(CApp *capp, const char *filePath)
     sws_ctx = sws_getContext(m_pCodecCtx->width,
                              m_pCodecCtx->height,
                              m_pCodecCtx->pix_fmt,
-                             1280,
-                             720,
+                             WINDOW_W,
+                             WINDOW_H,
                              //m_pCodecCtx->width / 2,
                              //m_pCodecCtx->height / 2,
                              AV_PIX_FMT_RGB24,
@@ -168,8 +170,15 @@ int CDecode::ReadFrame()
 {
     AVPacket *packet;
     packet = av_packet_alloc();
-    while (av_read_frame(pFormatCtx, packet) >= 0 && m_capp->Running)
-    {
+    int ret = 0;
+    while (m_capp->Running)
+    {   
+        m_mutex.lock();
+        ret = av_read_frame(pFormatCtx, packet);
+        m_mutex.unlock();
+        if(ret < 0)
+            break;
+
         // Is this a packet from the video stream?
         if (packet->stream_index == m_videoStream)
         {
@@ -212,27 +221,6 @@ int CDecode::DecodeFrame()
     AVPacket *packet;
     // Allocate an AVFrame structure
     int ret;
-    /*
-    AVFrame *pFrameRGB = av_frame_alloc();
-    if (pFrameRGB == NULL)
-        return -1;
-    uint8_t *buffer = NULL;
-    int numBytes;
-    // Determine required buffer size and allocate buffer
-    //numBytes = avpicture_get_size(AV_PIX_FMT_RGB24, m_decoder->GetVideoCtx()->width,
-    //                              m_decoder->GetVideoCtx()->height);
-    numBytes = av_image_get_buffer_size(AV_PIX_FMT_RGB24,
-                                        m_pCodecCtx->width,
-                                        m_pCodecCtx->height,
-                                        8);
-    buffer = (uint8_t *)av_malloc(numBytes * sizeof(uint8_t));
-    //avpicture_fill((AVPicture *)pFrameRGB, buffer, AV_PIX_FMT_RGB24,
-    //               m_decoder->GetVideoCtx()->width, m_decoder->GetVideoCtx()->height);
-    av_image_fill_arrays(&pFrameRGB->data[0], &pFrameRGB->linesize[0], buffer, AV_PIX_FMT_RGB24,
-                         m_pCodecCtx->width,
-                         m_pCodecCtx->height,
-                         1);
-                         */
     uint8_t *buffer = NULL;
     int numBytes;
     numBytes = av_image_get_buffer_size(AV_PIX_FMT_RGB24,
@@ -270,9 +258,6 @@ int CDecode::DecodeFrame()
                     {
                         pts = av_frame_get_best_effort_timestamp(pFrame);
                     }
-                    if (m_basePts < 0)
-                        m_basePts = pts;
-                    pts -= m_basePts;
                     pts *= av_q2d(pFormatCtx->streams[m_videoStream]->time_base);
                     pts = synchronize_video(pFrame, pts);
                     double aPts = get_audio_clock();
@@ -458,7 +443,9 @@ int CDecode::audio_decode_frame(uint8_t *audio_buf, int buf_size)
             {
                 m_audio_clock = av_q2d(pFormatCtx->streams[m_audioStream]->time_base) * pkt->pts;
             }
+            m_mutex.lock();
             len1 = avcodec_decode_audio4(m_audioCodecCtx, aFrame, &got_frame, pkt);
+            m_mutex.unlock();
             if (len1 < 0)
             {
                 LOG(ERROR) << "avcodec_decode_audio4 error";
@@ -557,8 +544,11 @@ void CDecode::Seek(int64_t seek_target, int seek_flags)
     seek_target = av_rescale_q(seek_target, AV_TIME_BASE_Q,
                                pFormatCtx->streams[m_videoStream]->time_base);
     LOG(INFO) << "seek_target:" << seek_target;
-    if (av_seek_frame(pFormatCtx, m_videoStream,
-                      seek_target, seek_flags) < 0)
+    m_mutex.lock();
+    int ret = av_seek_frame(pFormatCtx, m_videoStream,
+                      seek_target, seek_flags);
+    m_mutex.unlock();
+    if (ret < 0)
     {
         LOG(ERROR) << "error while seeking";
     }
@@ -601,6 +591,9 @@ double CDecode::get_audio_clock()
   if(bytes_per_sec) {
     pts -= (double)hw_buf_size / bytes_per_sec;
   }
+  //pts = pts - m_basePts/1000000;
+  //if( pts < 0 )
+  //  pts = 0;
   return pts;
 }
 

@@ -47,6 +47,7 @@ public:
     double get_audio_clock();
     int GetVolume(){return m_volume;};
     void SetVolume(int volume);
+    double GetBasePTS(){return m_basePts;};
 
 private:
     int AddPacket(AVPacket *packet);
