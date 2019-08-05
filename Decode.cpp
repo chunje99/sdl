@@ -265,7 +265,7 @@ int CDecode::DecodeFrame()
                     double diff = pts - aPts;
                     if (diff > 0)
                     {
-                        if (diff > 100.0)
+                        if (diff > 10.0)
                         {
                             LOG(INFO) << "usleep" << diff;
                         }
@@ -530,14 +530,15 @@ double CDecode::synchronize_video(AVFrame *src_frame, double pts)
     /* if we are repeating a frame, adjust clock accordingly */
     frame_delay += src_frame->repeat_pict * (frame_delay * 0.5);
     m_video_clock += frame_delay;
-    DLOG(INFO) << "video_clock:" << m_video_clock << " pts: " << pts << " audio_clock:" << get_audio_clock();
-    DLOG(INFO) << "videoPacket:" << m_packets.size() << " audioPacket: " << m_audioPackets.size();
+    //DLOG(INFO) << "video_clock:" << m_video_clock << " pts: " << pts << " audio_clock:" << get_audio_clock();
+    //DLOG(INFO) << "videoPacket:" << m_packets.size() << " audioPacket: " << m_audioPackets.size();
     return pts;
 }
 
 void CDecode::Seek(int64_t seek_target, int seek_flags)
 {
-
+    //m_audio_clock += seek_target;
+    //m_curPts += seek_target;
     seek_target += m_curPts;
     seek_target *= AV_TIME_BASE;
     LOG(INFO) << "seek_target:" << seek_target;
@@ -546,8 +547,7 @@ void CDecode::Seek(int64_t seek_target, int seek_flags)
     LOG(INFO) << "seek_target:" << seek_target;
     m_mutex.lock();
     int ret = av_seek_frame(pFormatCtx, m_videoStream,
-                      seek_target, seek_flags);
-    m_mutex.unlock();
+                            seek_target, seek_flags);
     if (ret < 0)
     {
         LOG(ERROR) << "error while seeking";
@@ -556,7 +556,6 @@ void CDecode::Seek(int64_t seek_target, int seek_flags)
     {
         /* handle packet queues... more later... */
         ///flush buffer
-        m_mutex.lock();
         AVPacket *packet = NULL;
         ///flush video
         while (!m_packets.empty())
@@ -572,8 +571,8 @@ void CDecode::Seek(int64_t seek_target, int seek_flags)
             m_audioPackets.pop();
             av_packet_free(&packet);
         }
-        m_mutex.unlock();
     }
+    m_mutex.unlock();
 }
 
 double CDecode::get_audio_clock()

@@ -301,7 +301,7 @@ void CApp::OnPauseClick()
 void CApp::OnRewindClick()
 {
     LOG(INFO) << "OnRewindClick";
-    m_decoder->Seek(-10.0, 0);
+    m_decoder->Seek(-10.0, AVSEEK_FLAG_BACKWARD);
 }
 
 void CApp::OnFFClick()
@@ -386,7 +386,6 @@ double CApp::GetCurPos()
     std::string timeStr = std::to_string((int)(curTime/1000000));
     timeStr += " / ";
     timeStr += std::to_string((int)(m_decoder->GetDuraion()/1000000));
-    DLOG(INFO) << "TIME:" << timeStr;
     m_ctext->SetText(timeStr.c_str());
 
     return  curTime / m_decoder->GetDuraion();
