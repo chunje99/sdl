@@ -3,11 +3,15 @@
 #include <unistd.h>
 #include <chrono>
 #include "config.h"
+#include "ECS.h"
+#include "Components.h"
 extern "C"
 {
 #include <libavutil/imgutils.h>
 }
 
+Manager manager;
+auto& newPlayer(manager.addEntity());
 
 //==============================================================================
 CApp::CApp()
@@ -141,6 +145,8 @@ bool CApp::OnInit()
         return false;
     }
 
+    newPlayer.addComponent<PositionComponent>();
+
     return true;
 }
 
@@ -185,6 +191,9 @@ void CApp::OnRender()
                             // m_decoder->GetVideoCtx()->height/2 );
     m_controller->OnDraw();
     m_ctext->OnDraw();
+    manager.update();
+    LOG(INFO) << newPlayer.getComponent<PositionComponent>().x() << "," << 
+                newPlayer.getComponent<PositionComponent>().y();
     SDL_RenderPresent(renderer);
 }
 void CApp::OnLoop()
