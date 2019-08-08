@@ -117,3 +117,28 @@ bool CSurface::OnDraw(SDL_Renderer *renderer, SDL_Texture* tex, int X, int Y, in
 
 	return true;
 }
+
+SDL_Texture* CSurface::Load(SDL_Renderer* renderer, const char* File) {
+	SDL_Surface* Surf_Temp = NULL;
+	SDL_Texture* tex = NULL;
+
+	if((Surf_Temp = IMG_Load(File)) == NULL) {
+		return NULL;
+	}
+
+	tex = SDL_CreateTextureFromSurface(renderer, Surf_Temp);
+	SDL_FreeSurface(Surf_Temp);
+
+	return tex;
+}
+
+bool CSurface::Draw(SDL_Renderer *renderer, SDL_Texture* tex, SDL_Rect srcRect, SDL_Rect destRect)
+{
+	if(renderer == NULL || tex == NULL ) {
+		return false;
+	}
+
+    SDL_RenderCopy(renderer, tex, &srcRect, &destRect);
+
+	return true;
+}

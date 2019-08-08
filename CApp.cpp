@@ -3,15 +3,14 @@
 #include <unistd.h>
 #include <chrono>
 #include "config.h"
-#include "ECS.h"
-#include "Components.h"
+#include "ECS/Components.h"
 extern "C"
 {
 #include <libavutil/imgutils.h>
 }
 
 Manager manager;
-auto& newPlayer(manager.addEntity());
+auto& player(manager.addEntity());
 
 //==============================================================================
 CApp::CApp()
@@ -145,7 +144,10 @@ bool CApp::OnInit()
         return false;
     }
 
-    newPlayer.addComponent<PositionComponent>();
+    player.addComponent<PositionComponent>();
+    player.addComponent<SpriteComponent>(renderer, "images/player1.png");
+
+    manager.init();
 
     return true;
 }
@@ -191,9 +193,10 @@ void CApp::OnRender()
                             // m_decoder->GetVideoCtx()->height/2 );
     m_controller->OnDraw();
     m_ctext->OnDraw();
-    manager.update();
-    LOG(INFO) << newPlayer.getComponent<PositionComponent>().x() << "," << 
-                newPlayer.getComponent<PositionComponent>().y();
+    manager.draw();
+    //player.getComponent<SpriteComponent>().draw();
+    //LOG(INFO) << newPlayer.getComponent<PositionComponent>().x() << "," << 
+    //            newPlayer.getComponent<PositionComponent>().y();
     SDL_RenderPresent(renderer);
 }
 void CApp::OnLoop()
@@ -209,6 +212,7 @@ void CApp::OnLoop()
         SDL_UpdateTexture(videoTexture, NULL, frame->data[0], frame->linesize[0]);
         av_frame_free(&frame);
     }
+    manager.update();
 }
 
 void CApp::OnCleanup()
