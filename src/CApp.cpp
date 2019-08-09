@@ -2,7 +2,6 @@
 #include "CApp.h"
 #include <unistd.h>
 #include <chrono>
-#include "config.h"
 #include "ECS/Components.h"
 extern "C"
 {
@@ -404,6 +403,7 @@ double CApp::GetCurPos()
     return  curTime / m_decoder->GetDuraion();
 }
 
+/*
 DEFINE_string(file, "", "video file name");
 int main(int argc, char *argv[])
 {
@@ -420,5 +420,6 @@ int main(int argc, char *argv[])
 
     return theApp.OnExecute();
 }
+*/
 
 //==============================================================================

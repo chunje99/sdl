@@ -82,5 +82,6 @@ PKG_CHECK_MODULES([GLOG], [libglog])
 PKG_CHECK_MODULES([GFLAGS], [gflags])
 
 AC_CONFIG_FILES([Makefile
+                src/Makefile
                  ])
 AC_OUTPUT

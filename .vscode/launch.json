@@ -8,7 +8,7 @@
 			"name": "(lldb) Mac",
 			"type": "cppdbg",
 			"request": "launch",
-			"program": "${workspaceFolder}/CApp",
+			"program": "${workspaceFolder}/src/Player",
 			"args": ["-file=/Users/marco.uno/Downloads/20190801160501_SBS",
 					"-logtostderr"],
 			"stopAtEntry": false,
@@ -22,7 +22,7 @@
 			"name": "(lldb) Mac2",
 			"type": "cppdbg",
 			"request": "launch",
-			"program": "${workspaceFolder}/CApp",
+			"program": "${workspaceFolder}/src/Player",
 			"args": ["-file=KakaoTalk_Video_2017-07-03-16-41-59.mp4",
 					"-logtostderr"],
 			"stopAtEntry": false,
@@ -36,7 +36,7 @@
 			"name": "debug Linux Avengers",
 			"type": "cppdbg",
 			"request": "launch",
-			"program": "${workspaceFolder}/CApp",
+			"program": "${workspaceFolder}/src/CApp",
 			"args": [
 				"-file=/media/ho80/CC9CF9B89CF99CE0/다운로드/Avengers.Endgame.2019.4K.UHD.ITUNES.DL.H265.Dolby.ATMOS.MSUBS-Deflate.Telly/Avengers.Endgame.2019.4K.UHD.ITUNES.DL.H265.MSUBS.Telly.mp4",
 				"-logtostderr"
@@ -52,7 +52,7 @@
 			"name": "debug Linux",
 			"type": "cppdbg",
 			"request": "launch",
-			"program": "${workspaceFolder}/CApp",
+			"program": "${workspaceFolder}/src/CApp",
 			"args": [
 				"-file=/media/ho80/CC9CF9B89CF99CE0/다운로드/에반게리온 Q/신세기 에반게리온 Q.mkv",
 				"-logtostderr"
