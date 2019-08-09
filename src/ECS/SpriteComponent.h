@@ -7,22 +7,24 @@
 class SpriteComponent : public Component
 {
 private:
-    PositionComponent * position;
-    SDL_Renderer * renderer;
-    SDL_Texture* texture;
+    PositionComponent *position;
+    SDL_Renderer *renderer;
+    SDL_Texture *texture;
     SDL_Rect srcRect, destRect;
 
 public:
     SpriteComponent() = default;
-    SpriteComponent(SDL_Renderer* rend, const char* path)
+    SpriteComponent(SDL_Renderer *rend, const char *path)
     {
         renderer = rend;
         texture = CSurface::Load(renderer, path);
+        position = NULL;
     }
 
     void init() override
     {
-        position = &entity->getComponent<PositionComponent>();
+        if (entity->hasComponent<PositionComponent>())
+            position = &entity->getComponent<PositionComponent>();
 
         srcRect.x = srcRect.y = 0;
         srcRect.w = srcRect.h = 32;
@@ -30,8 +32,11 @@ public:
     }
     void update() override
     {
-        destRect.x = position->x() / 100;
-        destRect.y = position->y() / 100;
+        if (entity->hasComponent<PositionComponent>())
+        {
+            destRect.x = position->x() / 100;
+            destRect.y = position->y() / 100;
+        }
     }
     void draw() override
     {

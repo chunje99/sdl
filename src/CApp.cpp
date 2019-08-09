@@ -10,6 +10,7 @@ extern "C"
 
 Manager manager;
 auto& player(manager.addEntity());
+auto& enemy(manager.addEntity());
 
 //==============================================================================
 CApp::CApp()
@@ -145,6 +146,8 @@ bool CApp::OnInit()
 
     player.addComponent<PositionComponent>();
     player.addComponent<SpriteComponent>(renderer, "images/player1.png");
+    enemy.addComponent<PositionComponent>(5000,5000);
+    enemy.addComponent<SpriteComponent>(renderer, "images/player1.png");
 
     manager.init();
 
@@ -402,24 +405,4 @@ double CApp::GetCurPos()
 
     return  curTime / m_decoder->GetDuraion();
 }
-
-/*
-DEFINE_string(file, "", "video file name");
-int main(int argc, char *argv[])
-{
-    google::InitGoogleLogging(argv[0]);
-#if defined OS_LINUX
-    gflags::ParseCommandLineFlags(&argc, &argv, true);
-#elif defined OS_MAC
-    google::ParseCommandLineFlags(&argc, &argv, true);
-#endif
-    LOG(INFO) << "FileName = " << FLAGS_file;
-
-    CApp theApp;
-    theApp.SetFileName(FLAGS_file.c_str());
-
-    return theApp.OnExecute();
-}
-*/
-
 //==============================================================================
