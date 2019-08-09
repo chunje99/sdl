@@ -2,6 +2,9 @@
 *.o
 *.Po
 *.Plo
+*.lo
+*.la
+*.a
 output*
 *.m4
 config.*
@@ -19,3 +22,7 @@ depcomp
 missing
 ar-lib
 stamp-h1
+
+
+###bin
+Player
