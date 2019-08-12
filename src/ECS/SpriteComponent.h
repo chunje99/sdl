@@ -7,7 +7,7 @@
 class SpriteComponent : public Component
 {
 private:
-    PositionComponent *position;
+    TransformComponent *transform;
     SDL_Renderer *renderer;
     SDL_Texture *texture;
     SDL_Rect srcRect, destRect;
@@ -17,25 +17,36 @@ public:
     SpriteComponent(SDL_Renderer *rend, const char *path)
     {
         renderer = rend;
+        setTex(path);
+        transform = NULL;
+    }
+    ~SpriteComponent()
+    {
+        SDL_DestroyTexture(texture);
+    }
+
+    void setTex( const char* path)
+    {
         texture = CSurface::Load(renderer, path);
-        position = NULL;
     }
 
     void init() override
     {
-        if (entity->hasComponent<PositionComponent>())
-            position = &entity->getComponent<PositionComponent>();
+        if (entity->hasComponent<TransformComponent>())
+            transform = &entity->getComponent<TransformComponent>();
 
         srcRect.x = srcRect.y = 0;
-        srcRect.w = srcRect.h = 32;
-        destRect.w = destRect.h = 64;
+        srcRect.w = transform->width;
+        srcRect.h = transform->height;
     }
     void update() override
     {
-        if (entity->hasComponent<PositionComponent>())
+        if (entity->hasComponent<TransformComponent>())
         {
-            destRect.x = position->x() / 100;
-            destRect.y = position->y() / 100;
+            destRect.x = static_cast<int>(transform->position.x);
+            destRect.y = static_cast<int>(transform->position.y);
+            destRect.w = transform->width * transform->scale;
+            destRect.h = transform->height * transform->scale;
         }
     }
     void draw() override

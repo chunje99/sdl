@@ -36,7 +36,7 @@
 			"name": "debug Linux Avengers",
 			"type": "cppdbg",
 			"request": "launch",
-			"program": "${workspaceFolder}/src/CApp",
+			"program": "${workspaceFolder}/src/Player",
 			"args": [
 				"-file=/media/ho80/CC9CF9B89CF99CE0/다운로드/Avengers.Endgame.2019.4K.UHD.ITUNES.DL.H265.Dolby.ATMOS.MSUBS-Deflate.Telly/Avengers.Endgame.2019.4K.UHD.ITUNES.DL.H265.MSUBS.Telly.mp4",
 				"-logtostderr"
@@ -52,9 +52,24 @@
 			"name": "debug Linux",
 			"type": "cppdbg",
 			"request": "launch",
-			"program": "${workspaceFolder}/src/CApp",
+			"program": "${workspaceFolder}/src/Player",
 			"args": [
 				"-file=/media/ho80/CC9CF9B89CF99CE0/다운로드/에반게리온 Q/신세기 에반게리온 Q.mkv",
+				"-logtostderr"
+			],
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}",
+			"environment": [],
+			"externalConsole": false,
+			"MIMode": "gdb",
+			"preLaunchTask": "make"
+		},
+		{
+			"name": "debug Linux Game",
+			"type": "cppdbg",
+			"request": "launch",
+			"program": "${workspaceFolder}/src/Game",
+			"args": [
 				"-logtostderr"
 			],
 			"stopAtEntry": false,

@@ -144,9 +144,9 @@ bool CApp::OnInit()
         return false;
     }
 
-    player.addComponent<PositionComponent>();
+    player.addComponent<TransformComponent>();
     player.addComponent<SpriteComponent>(renderer, "images/player1.png");
-    enemy.addComponent<PositionComponent>(5000,5000);
+    enemy.addComponent<TransformComponent>(5000,5000);
     enemy.addComponent<SpriteComponent>(renderer, "images/player1.png");
 
     manager.init();
@@ -214,6 +214,7 @@ void CApp::OnLoop()
         SDL_UpdateTexture(videoTexture, NULL, frame->data[0], frame->linesize[0]);
         av_frame_free(&frame);
     }
+    player.getComponent<TransformComponent>().position += Vector2D(1,1);
     manager.update();
 }
 
