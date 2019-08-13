@@ -3,6 +3,7 @@
 #include "ECS/Components.h"
 #include "Vector2D.h"
 #include "Collision.h"
+#include "Map.h"
 
 Manager manager;
 SDL_Renderer *CGame::renderer;
@@ -13,9 +14,6 @@ std::vector<ColliderComponent *> CGame::colliders;
 auto &player(manager.addEntity());
 auto &wall(manager.addEntity());
 
-auto &tile0(manager.addEntity());
-auto &tile1(manager.addEntity());
-auto &tile2(manager.addEntity());
 
 CGame::CGame() : isRunning(false) {}
 
@@ -42,6 +40,8 @@ void CGame::init(const char *titl, int width, int height, bool fullscreen)
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 
+    Map::LoadMap("images/map_16x16.map", 16, 16);
+
     player.addComponent<TransformComponent>(2);
     player.addComponent<SpriteComponent>(renderer, "images/player1.png");
     player.addComponent<KeyboardController>();
@@ -50,12 +50,6 @@ void CGame::init(const char *titl, int width, int height, bool fullscreen)
     wall.addComponent<TransformComponent>(300.0f, 300.0f, 300, 20, 1);
     wall.addComponent<SpriteComponent>(renderer, "images/wall.png");
     wall.addComponent<ColliderComponent>("wall");
-
-    tile0.addComponent<TileComponent>(200, 200, 32, 32, 0);
-    tile1.addComponent<TileComponent>(250, 250, 32, 32, 1);
-    tile1.addComponent<ColliderComponent>("dirt");
-    tile2.addComponent<TileComponent>(150, 150, 32, 32, 2);
-    tile2.addComponent<ColliderComponent>("grass");
 
     //manager.init();
 
@@ -110,4 +104,10 @@ void CGame::OnEvent(SDL_Event *Event)
 void CGame::OnExit()
 {
     isRunning = false;
+}
+
+void CGame::AddTile(int id, int x, int y)
+{
+    auto& tile(manager.addEntity());
+    tile.addComponent<TileComponent>(x, y, 32, 32, id);
 }

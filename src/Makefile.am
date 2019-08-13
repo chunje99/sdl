@@ -1,7 +1,6 @@
 noinst_LTLIBRARIES = libsdltool.la
 
 SOURCES = CApp.cpp
-SOURCES += CGame.cpp
 SOURCES += CSurface.cpp
 SOURCES += CEvent.cpp
 SOURCES += Decode.cpp
@@ -10,6 +9,8 @@ SOURCES += CButton.cpp
 SOURCES += CText.cpp
 SOURCES += Vector2D.cpp
 SOURCES += Collision.cpp
+SOURCES += Map.cpp
+SOURCES += CGame.cpp
 
 libsdltool_la_SOURCES = $(SOURCES)
 
