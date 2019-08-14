@@ -83,5 +83,6 @@ PKG_CHECK_MODULES([GFLAGS], [gflags])
 
 AC_CONFIG_FILES([Makefile
                 src/Makefile
+                src/ECS/Makefile
                  ])
 AC_OUTPUT

@@ -33,6 +33,19 @@
 			"preLaunchTask": "make"
 		},
 		{
+			"name": "(lldb) Game",
+			"type": "cppdbg",
+			"request": "launch",
+			"program": "${workspaceFolder}/src/Game",
+			"args": ["-logtostderr"],
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}",
+			"environment": [],
+			"externalConsole": false,
+			"MIMode": "lldb",
+			"preLaunchTask": "make"
+		},
+		{
 			"name": "debug Linux Avengers",
 			"type": "cppdbg",
 			"request": "launch",

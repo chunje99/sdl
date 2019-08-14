@@ -1,0 +1,16 @@
+#SUBDIRS = ECS
+noinst_LTLIBRARIES = libsdlECS.la
+
+SOURCES = ECS.cpp
+
+libsdlECS_la_SOURCES = $(SOURCES)
+
+libsdlECS_la_CXXFLAGS = $(SDL2_CFLAGS)
+libsdlECS_la_CXXFLAGS += $(FFMPEG_CFLAGS)
+libsdlECS_la_CXXFLAGS += $(GFLAGS_CFLAGS)
+libsdlECS_la_CXXFLAGS += $(GLOG_CFLAGS)
+
+libsdlECS_la_LDFLAGS = $(SDL2_LDFLAGS)
+libsdlECS_la_LDFLAGS += $(FFMPEG_LDFLAGS) 
+libsdlECS_la_LDFLAGS += $(GFLAGS_LDFLAGS) 
+libsdlECS_la_LDFLAGS += $(GLOG_LDFLAGS) 

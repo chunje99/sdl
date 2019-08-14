@@ -14,6 +14,14 @@ std::vector<ColliderComponent *> CGame::colliders;
 auto &player(manager.addEntity());
 auto &wall(manager.addEntity());
 
+enum groupLabels : std::size_t
+{
+    groupMap,
+    groupPlayers,
+    groupEnemies,
+    groupColliders
+
+};
 
 CGame::CGame() : isRunning(false) {}
 
@@ -46,10 +54,12 @@ void CGame::init(const char *titl, int width, int height, bool fullscreen)
     player.addComponent<SpriteComponent>(renderer, "images/player1.png");
     player.addComponent<KeyboardController>();
     player.addComponent<ColliderComponent>("player");
+    player.addGroup(groupPlayers);
 
     wall.addComponent<TransformComponent>(300.0f, 300.0f, 300, 20, 1);
     wall.addComponent<SpriteComponent>(renderer, "images/wall.png");
     wall.addComponent<ColliderComponent>("wall");
+    wall.addGroup(groupMap);
 
     //manager.init();
 
@@ -68,14 +78,6 @@ void CGame::update()
     cnt++;
     manager.refresh();
     manager.update();
-    //player.getComponent<TransformComponent>().position += Vector2D(1,1);
-    //if (Collision::AABB(player.getComponent<ColliderComponent>().collider,
-    //                    wall.getComponent<ColliderComponent>().collider))
-    //{
-    //    player.getComponent<TransformComponent>().scale = 1;
-    //    player.getComponent<TransformComponent>().velocity *= -1;
-    //    LOG(INFO) << "Wall Hit";
-    //}
 
     for( auto cc : colliders)
     {
@@ -83,10 +85,19 @@ void CGame::update()
             Collision::AABB(player.getComponent<ColliderComponent>(), *cc);
     }
 }
+auto& tiles(manager.getGroup(groupMap));
+auto& players(manager.getGroup(groupPlayers));
+auto& enemies(manager.getGroup(groupEnemies));
+
 void CGame::render()
 {
     SDL_RenderClear(renderer);
-    manager.draw();
+    for( auto& t : tiles)
+        t->draw();
+    for( auto& p : players)
+        p->draw();
+    for( auto& e : enemies)
+        e->draw();
     SDL_RenderPresent(renderer);
     LOG(INFO) << "CNT: " << cnt;
 }
@@ -110,4 +121,5 @@ void CGame::AddTile(int id, int x, int y)
 {
     auto& tile(manager.addEntity());
     tile.addComponent<TileComponent>(x, y, 32, 32, id);
+    tile.addGroup(groupMap);
 }

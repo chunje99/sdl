@@ -1,3 +1,4 @@
+SUBDIRS = ECS
 noinst_LTLIBRARIES = libsdltool.la
 
 SOURCES = CApp.cpp
@@ -23,6 +24,8 @@ libsdltool_la_LDFLAGS = $(SDL2_LDFLAGS)
 libsdltool_la_LDFLAGS += $(FFMPEG_LDFLAGS) 
 libsdltool_la_LDFLAGS += $(GFLAGS_LDFLAGS) 
 libsdltool_la_LDFLAGS += $(GLOG_LDFLAGS) 
+
+libsdltool_la_LIBADD = ./ECS/libsdlECS.la
 
 bin_PROGRAMS = Player Game
 
