@@ -14,6 +14,8 @@ std::vector<ColliderComponent *> CGame::colliders;
 auto &player(manager.addEntity());
 auto &wall(manager.addEntity());
 
+const char* mapFile = "images/map_tile.png";
+
 enum groupLabels : std::size_t
 {
     groupMap,
@@ -57,11 +59,6 @@ void CGame::init(const char *titl, int width, int height, bool fullscreen)
     player.addComponent<ColliderComponent>("player");
     player.addGroup(groupPlayers);
 
-    wall.addComponent<TransformComponent>(300.0f, 300.0f, 300, 20, 1);
-    wall.addComponent<SpriteComponent>(renderer, "images/wall.png");
-    wall.addComponent<ColliderComponent>("wall");
-    wall.addGroup(groupMap);
-
     //manager.init();
 
     isRunning = true;
@@ -100,7 +97,6 @@ void CGame::render()
     for( auto& e : enemies)
         e->draw();
     SDL_RenderPresent(renderer);
-    LOG(INFO) << "CNT: " << cnt;
 }
 void CGame::clean()
 {
@@ -118,9 +114,9 @@ void CGame::OnExit()
     isRunning = false;
 }
 
-void CGame::AddTile(int id, int x, int y)
+void CGame::AddTile(int srcX, int srcY, int xpos, int ypos)
 {
     auto& tile(manager.addEntity());
-    tile.addComponent<TileComponent>(x, y, 32, 32, id);
+    tile.addComponent<TileComponent>(srcX, srcY, xpos, ypos, mapFile);
     tile.addGroup(groupMap);
 }

@@ -8,49 +8,31 @@
 class TileComponent : public Component
 {
 public:
-    TransformComponent *transform;
-    SpriteComponent *sprite;
-
-    SDL_Rect tileRect;
-    int tileID;
-    char *path;
+    SDL_Texture* texture;
+    SDL_Rect srcRect, destRect;
 
     TileComponent() = default;
-
-    TileComponent(int x, int y, int w, int h, int id)
+    ~TileComponent()
     {
-        tileRect.x = x;
-        tileRect.y = y;
-        tileRect.w = w;
-        tileRect.h = h;
-        tileID = id;
-
-        switch (tileID)
-        {
-        case 0:
-            path = "images/water.png";
-            break;
-        case 1:
-            path = "images/dirt.png";
-            break;
-        case 2:
-            path = "images/grass.png";
-            break;
-        default:
-            break;
-        }
+        SDL_DestroyTexture(texture);
     }
 
-    void init() override
+    TileComponent(int srcX, int srcY, int xpos, int ypos, const char* path)
     {
-        entity->addComponent<TransformComponent>(
-            static_cast<float>(tileRect.x),
-            static_cast<float>(tileRect.y),
-            tileRect.w, tileRect.h, 1);
-        transform = &entity->getComponent<TransformComponent>();
+        texture = CSurface::Load(CGame::renderer, path);
 
-        entity->addComponent<SpriteComponent>(CGame::renderer, path);
-        sprite = &entity->getComponent<SpriteComponent>();
+        srcRect.x = srcX;
+        srcRect.y = srcY;
+        srcRect.w = srcRect.h = 32;
+
+        destRect.x = xpos;
+        destRect.y = ypos;
+        destRect.w = destRect.h = 32;
+    }
+
+    void draw() override
+    {
+        CSurface::Draw(CGame::renderer, texture, srcRect, destRect, SDL_FLIP_NONE);
     }
 };
 
