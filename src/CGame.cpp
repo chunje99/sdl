@@ -51,7 +51,8 @@ void CGame::init(const char *titl, int width, int height, bool fullscreen)
     Map::LoadMap("images/map_16x16.map", 16, 16);
 
     player.addComponent<TransformComponent>(2);
-    player.addComponent<SpriteComponent>(renderer, "images/player1.png");
+    //player.addComponent<SpriteComponent>(renderer, "images/player1.png");
+    player.addComponent<SpriteComponent>(renderer, "images/player_ani.png", true);
     player.addComponent<KeyboardController>();
     player.addComponent<ColliderComponent>("player");
     player.addGroup(groupPlayers);

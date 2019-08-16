@@ -132,13 +132,13 @@ SDL_Texture* CSurface::Load(SDL_Renderer* renderer, const char* File) {
 	return tex;
 }
 
-bool CSurface::Draw(SDL_Renderer *renderer, SDL_Texture* tex, SDL_Rect srcRect, SDL_Rect destRect)
+bool CSurface::Draw(SDL_Renderer *renderer, SDL_Texture* tex, SDL_Rect srcRect, SDL_Rect destRect, SDL_RendererFlip flip)
 {
 	if(renderer == NULL || tex == NULL ) {
 		return false;
 	}
 
-    SDL_RenderCopy(renderer, tex, &srcRect, &destRect);
+    SDL_RenderCopyEx(renderer, tex, &srcRect, &destRect, NULL, NULL, flip);
 
 	return true;
 }

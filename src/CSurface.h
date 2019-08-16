@@ -22,7 +22,7 @@ class CSurface {
 
 
 		static SDL_Texture * Load(SDL_Renderer* renderer, const char* File);
-		static bool Draw(SDL_Renderer* renderer, SDL_Texture* tex, SDL_Rect srcRect, SDL_Rect destRect);
+		static bool Draw(SDL_Renderer* renderer, SDL_Texture* tex, SDL_Rect srcRect, SDL_Rect destRect, SDL_RendererFlip flip);
 };
 
 //==============================================================================
