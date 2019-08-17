@@ -14,6 +14,7 @@ std::vector<ColliderComponent *> CGame::colliders;
 auto &player(manager.addEntity());
 auto &wall(manager.addEntity());
 
+
 const char* mapFile = "images/map_tile.png";
 
 enum groupLabels : std::size_t
@@ -25,7 +26,13 @@ enum groupLabels : std::size_t
 
 };
 
-CGame::CGame() : isRunning(false) {}
+auto& tiles(manager.getGroup(groupMap));
+auto& players(manager.getGroup(groupPlayers));
+auto& enemies(manager.getGroup(groupEnemies));
+
+bool CGame::isRunning = false;
+
+CGame::CGame() {}
 
 CGame::~CGame() {}
 
@@ -77,15 +84,15 @@ void CGame::update()
     manager.refresh();
     manager.update();
 
-    for( auto cc : colliders)
+    Vector2D pVec = player.getComponent<TransformComponent>().velocity;
+    int pSpeed = player.getComponent<TransformComponent>().speed;
+
+    for( auto t : tiles )
     {
-        if (player.getComponent<ColliderComponent>().tag != (*cc).tag)
-            Collision::AABB(player.getComponent<ColliderComponent>(), *cc);
+        t->getComponent<TileComponent>().destRect.x += -(pVec.x * pSpeed);
+        t->getComponent<TileComponent>().destRect.y += -(pVec.y * pSpeed);
     }
 }
-auto& tiles(manager.getGroup(groupMap));
-auto& players(manager.getGroup(groupPlayers));
-auto& enemies(manager.getGroup(groupEnemies));
 
 void CGame::render()
 {

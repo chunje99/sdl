@@ -29,12 +29,12 @@ public:
     static SDL_Event event;
     static std::vector<ColliderComponent*> colliders;
     static void AddTile(int srcX, int srcY, int x, int y);
+    static bool isRunning;
 
 private:
     void OnEvent(SDL_Event *Event);
     void OnExit();
 
-    bool isRunning = false;
     int cnt = 0;
     SDL_Window * window;
 

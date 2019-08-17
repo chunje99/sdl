@@ -27,7 +27,7 @@ public:
 
         destRect.x = xpos;
         destRect.y = ypos;
-        destRect.w = destRect.h = 32;
+        destRect.w = destRect.h = 64;
     }
 
     void draw() override

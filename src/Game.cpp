@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
     int frameTime;
 
     CGame *game = new CGame();
-    game->init("Game Window", 1280, 720, 0);
+    game->init("Game Window", 800, 640, 0);
     while (game->running())
     {
         frameStart = SDL_GetTicks();
