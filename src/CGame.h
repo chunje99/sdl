@@ -9,8 +9,8 @@
 #include <glog/logging.h>
 #include <gflags/gflags.h>
 
+class AssetManager;
 class ColliderComponent;
-
 class CGame : CEvent
 {
 public:
@@ -27,9 +27,16 @@ public:
 
     static SDL_Renderer* renderer;
     static SDL_Event event;
-    static std::vector<ColliderComponent*> colliders;
-    static void AddTile(int srcX, int srcY, int x, int y);
     static bool isRunning;
+    static SDL_Rect camera;
+    static AssetManager* assets;
+    enum groupLabels : std::size_t
+    {
+        groupMap,
+        groupPlayers,
+        groupColliders
+
+    };
 
 private:
     void OnEvent(SDL_Event *Event);

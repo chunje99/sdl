@@ -19,10 +19,10 @@ class CSurface {
 		static bool OnDraw(SDL_Renderer* renderer, SDL_Texture* tex, int X, int Y, int W, int H);
 		static bool OnDraw(SDL_Renderer* renderer, SDL_Texture* tex, SDL_Surface* Surf_Src, int X, int Y);
 		static bool Transparent(SDL_Surface* Surf_Dest, int R, int G, int B);
-
-
-		static SDL_Texture * Load(SDL_Renderer* renderer, const char* File);
 		static bool Draw(SDL_Renderer* renderer, SDL_Texture* tex, SDL_Rect srcRect, SDL_Rect destRect, SDL_RendererFlip flip);
+
+		static SDL_Texture * Load(const char* File);
+		static bool Draw(SDL_Texture* tex, SDL_Rect srcRect, SDL_Rect destRect, SDL_RendererFlip flip);
 };
 
 //==============================================================================

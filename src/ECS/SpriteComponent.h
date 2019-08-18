@@ -5,12 +5,13 @@
 #include "CSurface.h"
 #include "Animation.h"
 #include <map>
+#include "../CGame.h"
+#include "../AssetManager.h"
 
 class SpriteComponent : public Component
 {
 private:
     TransformComponent *transform;
-    SDL_Renderer *renderer;
     SDL_Texture *texture;
     SDL_Rect srcRect, destRect;
 
@@ -24,15 +25,13 @@ public:
     SDL_RendererFlip spriteFlip = SDL_FLIP_NONE;
 
     SpriteComponent() = default;
-    SpriteComponent(SDL_Renderer *rend, const char *path)
+    SpriteComponent(std::string id)
     {
-        renderer = rend;
-        setTex(path);
+        setTex(id);
         transform = NULL;
     }
-    SpriteComponent(SDL_Renderer *rend, const char *path, bool isAnimated)
+    SpriteComponent(std::string id, bool isAnimated)
     {
-        renderer = rend;
         animated = isAnimated;
 
         Animation idle = Animation(0, 4, 100);
@@ -42,17 +41,16 @@ public:
 
         Play("Idle");
 
-        setTex(path);
+        setTex(id);
         transform = NULL;
     }
     ~SpriteComponent()
     {
-        SDL_DestroyTexture(texture);
     }
 
-    void setTex( const char* path)
+    void setTex(std::string id)
     {
-        texture = CSurface::Load(renderer, path);
+        texture = CGame::assets->GetTexture(id);
     }
 
     void init() override
@@ -73,15 +71,15 @@ public:
                 srcRect.x = srcRect.w * static_cast<int>((SDL_GetTicks() / speed) % frames);
             }
             srcRect.y = animIndex * transform->height;
-            destRect.x = static_cast<int>(transform->position.x);
-            destRect.y = static_cast<int>(transform->position.y);
+            destRect.x = static_cast<int>(transform->position.x) - CGame::camera.x;
+            destRect.y = static_cast<int>(transform->position.y) - CGame::camera.y;
             destRect.w = transform->width * transform->scale;
             destRect.h = transform->height * transform->scale;
         }
     }
     void draw() override
     {
-        CSurface::Draw(renderer, texture, srcRect, destRect, spriteFlip);
+        CSurface::Draw(texture, srcRect, destRect, spriteFlip);
     }
 
     void Play(const char* animName)

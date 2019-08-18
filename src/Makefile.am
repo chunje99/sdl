@@ -1,7 +1,8 @@
 SUBDIRS = ECS
 noinst_LTLIBRARIES = libsdltool.la
 
-SOURCES = CApp.cpp
+#SOURCES = CApp.cpp
+SOURCES = CGame.cpp
 SOURCES += CSurface.cpp
 SOURCES += CEvent.cpp
 SOURCES += Decode.cpp
@@ -11,7 +12,7 @@ SOURCES += CText.cpp
 SOURCES += Vector2D.cpp
 SOURCES += Collision.cpp
 SOURCES += Map.cpp
-SOURCES += CGame.cpp
+SOURCES += AssetManager.cpp
 
 libsdltool_la_SOURCES = $(SOURCES)
 
@@ -27,21 +28,22 @@ libsdltool_la_LDFLAGS += $(GLOG_LDFLAGS)
 
 libsdltool_la_LIBADD = ./ECS/libsdlECS.la
 
-bin_PROGRAMS = Player Game
+#bin_PROGRAMS = Player Game
+bin_PROGRAMS = Game
 
-Player_SOURCES = Player.cpp
-
-Player_LDADD = libsdltool.la
-Player_LDADD += $(SDL2_LIBS)
-Player_LDADD += $(FFMPEG_LIBS)
-Player_LDADD += $(GFLAGS_LIBS)
-Player_LDADD += $(GLOG_LIBS)
-Player_LDADD += -lpthread
-
-Player_CXXFLAGS = $(SDL2_CFLAGS)
-Player_CXXFLAGS += $(FFMPEG_CFLAGS)
-Player_CXXFLAGS += $(GFLAGS_CFLAGS)
-Player_CXXFLAGS += $(GLOG_CFLAGS)
+#Player_SOURCES = Player.cpp
+#
+#Player_LDADD = libsdltool.la
+#Player_LDADD += $(SDL2_LIBS)
+#Player_LDADD += $(FFMPEG_LIBS)
+#Player_LDADD += $(GFLAGS_LIBS)
+#Player_LDADD += $(GLOG_LIBS)
+#Player_LDADD += -lpthread
+#
+#Player_CXXFLAGS = $(SDL2_CFLAGS)
+#Player_CXXFLAGS += $(FFMPEG_CFLAGS)
+#Player_CXXFLAGS += $(GFLAGS_CFLAGS)
+#Player_CXXFLAGS += $(GLOG_CFLAGS)
 
 Game_SOURCES = Game.cpp
 

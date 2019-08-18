@@ -1,5 +1,6 @@
 //==============================================================================
 #include "CSurface.h"
+#include "CGame.h"
 
 //==============================================================================
 CSurface::CSurface() {
@@ -118,7 +119,7 @@ bool CSurface::OnDraw(SDL_Renderer *renderer, SDL_Texture* tex, int X, int Y, in
 	return true;
 }
 
-SDL_Texture* CSurface::Load(SDL_Renderer* renderer, const char* File) {
+SDL_Texture* CSurface::Load(const char* File) {
 	SDL_Surface* Surf_Temp = NULL;
 	SDL_Texture* tex = NULL;
 
@@ -126,7 +127,7 @@ SDL_Texture* CSurface::Load(SDL_Renderer* renderer, const char* File) {
 		return NULL;
 	}
 
-	tex = SDL_CreateTextureFromSurface(renderer, Surf_Temp);
+	tex = SDL_CreateTextureFromSurface(CGame::renderer, Surf_Temp);
 	SDL_FreeSurface(Surf_Temp);
 
 	return tex;
@@ -139,6 +140,16 @@ bool CSurface::Draw(SDL_Renderer *renderer, SDL_Texture* tex, SDL_Rect srcRect, 
 	}
 
     SDL_RenderCopyEx(renderer, tex, &srcRect, &destRect, NULL, NULL, flip);
+
+	return true;
+}
+bool CSurface::Draw(SDL_Texture* tex, SDL_Rect srcRect, SDL_Rect destRect, SDL_RendererFlip flip)
+{
+	if(tex == NULL ) {
+		return false;
+	}
+
+    SDL_RenderCopyEx(CGame::renderer, tex, &srcRect, &destRect, NULL, NULL, flip);
 
 	return true;
 }

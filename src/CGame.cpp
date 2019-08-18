@@ -4,33 +4,20 @@
 #include "Vector2D.h"
 #include "Collision.h"
 #include "Map.h"
+#include "AssetManager.h"
 
+Map* map;
 Manager manager;
 SDL_Renderer *CGame::renderer;
 SDL_Event CGame::event;
 
-std::vector<ColliderComponent *> CGame::colliders;
+bool CGame::isRunning = false;
+
+SDL_Rect CGame::camera = {0,0,800,640};
+
+AssetManager* CGame::assets = new AssetManager(&manager);
 
 auto &player(manager.addEntity());
-auto &wall(manager.addEntity());
-
-
-const char* mapFile = "images/map_tile.png";
-
-enum groupLabels : std::size_t
-{
-    groupMap,
-    groupPlayers,
-    groupEnemies,
-    groupColliders
-
-};
-
-auto& tiles(manager.getGroup(groupMap));
-auto& players(manager.getGroup(groupPlayers));
-auto& enemies(manager.getGroup(groupEnemies));
-
-bool CGame::isRunning = false;
 
 CGame::CGame() {}
 
@@ -57,11 +44,15 @@ void CGame::init(const char *titl, int width, int height, bool fullscreen)
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 
-    Map::LoadMap("images/map_16x16.map", 16, 16);
+    assets->AddTexture("terrain", "images/map_tile.png");
+    assets->AddTexture("player", "images/player_ani.png");
 
-    player.addComponent<TransformComponent>(2);
-    //player.addComponent<SpriteComponent>(renderer, "images/player1.png");
-    player.addComponent<SpriteComponent>(renderer, "images/player_ani.png", true);
+    //map = new Map("images/map_tile.png", 3, 32);
+    map = new Map("terrain", 2, 32);
+    map->LoadMap("images/map_16x16.map", 16, 16);
+
+    player.addComponent<TransformComponent>(400, 320, 32, 32, 4);
+    player.addComponent<SpriteComponent>("player", true);
     player.addComponent<KeyboardController>();
     player.addComponent<ColliderComponent>("player");
     player.addGroup(groupPlayers);
@@ -70,6 +61,11 @@ void CGame::init(const char *titl, int width, int height, bool fullscreen)
 
     isRunning = true;
 }
+
+auto& tiles(manager.getGroup(CGame::groupMap));
+auto& players(manager.getGroup(CGame::groupPlayers));
+auto& colliders(manager.getGroup(CGame::groupColliders));
+
 
 void CGame::handleEvents()
 {
@@ -81,19 +77,33 @@ void CGame::handleEvents()
 void CGame::update()
 {
     cnt++;
+    SDL_Rect playerCol = player.getComponent<ColliderComponent>().collider;
+    Vector2D playerPos = player.getComponent<TransformComponent>().position;
+
     manager.refresh();
     manager.update();
 
-    Vector2D pVec = player.getComponent<TransformComponent>().velocity;
-    int pSpeed = player.getComponent<TransformComponent>().speed;
-
-    for( auto t : tiles )
+    for( auto& c : colliders)
     {
-        t->getComponent<TileComponent>().destRect.x += -(pVec.x * pSpeed);
-        t->getComponent<TileComponent>().destRect.y += -(pVec.y * pSpeed);
+        SDL_Rect cCol = c->getComponent<ColliderComponent>().collider;
+        if(Collision::AABB(cCol, playerCol))
+        {
+            player.getComponent<TransformComponent>().position = playerPos;
+        }
     }
-}
 
+    camera.x = player.getComponent<TransformComponent>().position.x - 400;
+    camera.y = player.getComponent<TransformComponent>().position.y - 320;
+
+    if (camera.x < 0)
+        camera.x = 0;
+    if (camera.y < 0)
+        camera.y = 0;
+    if (camera.x > camera.w)
+        camera.x = camera.w;
+    if (camera.y > camera.h)
+        camera.y = camera.h;
+}
 void CGame::render()
 {
     SDL_RenderClear(renderer);
@@ -101,8 +111,6 @@ void CGame::render()
         t->draw();
     for( auto& p : players)
         p->draw();
-    for( auto& e : enemies)
-        e->draw();
     SDL_RenderPresent(renderer);
 }
 void CGame::clean()
@@ -119,11 +127,4 @@ void CGame::OnEvent(SDL_Event *Event)
 void CGame::OnExit()
 {
     isRunning = false;
-}
-
-void CGame::AddTile(int srcX, int srcY, int xpos, int ypos)
-{
-    auto& tile(manager.addEntity());
-    tile.addComponent<TileComponent>(srcX, srcY, xpos, ypos, mapFile);
-    tile.addGroup(groupMap);
 }
