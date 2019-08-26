@@ -46,6 +46,7 @@ void CGame::init(const char *titl, int width, int height, bool fullscreen)
 
     assets->AddTexture("terrain", "images/map_tile.png");
     assets->AddTexture("player", "images/player_ani.png");
+    assets->AddTexture("projectile", "images/projectile.png");
 
     //map = new Map("images/map_tile.png", 3, 32);
     map = new Map("terrain", 2, 32);
@@ -57,6 +58,8 @@ void CGame::init(const char *titl, int width, int height, bool fullscreen)
     player.addComponent<ColliderComponent>("player");
     player.addGroup(groupPlayers);
 
+    assets->CreateProjectile(Vector2D(350, 320), Vector2D(2, 0), 200, 2, "projectile");
+
     //manager.init();
 
     isRunning = true;
@@ -65,6 +68,7 @@ void CGame::init(const char *titl, int width, int height, bool fullscreen)
 auto& tiles(manager.getGroup(CGame::groupMap));
 auto& players(manager.getGroup(CGame::groupPlayers));
 auto& colliders(manager.getGroup(CGame::groupColliders));
+auto& projectiles(manager.getGroup(CGame::groupProjectiles));
 
 
 void CGame::handleEvents()
@@ -92,6 +96,15 @@ void CGame::update()
         }
     }
 
+    for( auto& p : projectiles)
+    {
+        if(Collision::AABB(player.getComponent<ColliderComponent>().collider, p->getComponent<ColliderComponent>().collider))
+        {
+            LOG(INFO) << "Hit player!";
+            p->destroy();
+        }
+    }
+
     camera.x = player.getComponent<TransformComponent>().position.x - 400;
     camera.y = player.getComponent<TransformComponent>().position.y - 320;
 
@@ -110,6 +123,8 @@ void CGame::render()
     for( auto& t : tiles)
         t->draw();
     for( auto& p : players)
+        p->draw();
+    for( auto& p : projectiles)
         p->draw();
     SDL_RenderPresent(renderer);
 }
